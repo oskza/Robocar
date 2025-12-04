@@ -9,10 +9,9 @@ private:
 public:
   MotorsX2(Motor *motorR, Motor *motorL);
   void init(uint32_t freq, uint8_t res);
+  void stop();
   void moveForward(uint8_t pwm);
   void moveBackward(uint8_t pwm);
-  void turnLeft(uint8_t pwm);
-  void turnRight(uint8_t pwm);
-  void stop();
+  void moveDifferential(int16_t velocity, int16_t turn);
 };
 #endif
