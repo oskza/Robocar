@@ -12,6 +12,8 @@ public:
   void stop();
   void moveForward(uint8_t pwm);
   void moveBackward(uint8_t pwm);
+  void turnLeft(uint8_t pwm);
+  void turnRight(uint8_t pwm);
   void moveDifferential(int16_t velocity, int16_t turn);
 };
 #endif

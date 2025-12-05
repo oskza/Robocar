@@ -22,6 +22,16 @@ void MotorsX2::moveBackward(uint8_t pwm) {
     _motorL->backward(pwm);
 }
 
+void MotorsX2::turnLeft(uint8_t pwm) {
+    _motorR->forward(pwm);
+    _motorL->backward(pwm);
+}
+
+void MotorsX2::turnRight(uint8_t pwm) {
+    _motorR->backward(pwm);
+    _motorL->forward(pwm);
+}
+
 void MotorsX2::moveDifferential(int16_t velocity, int16_t turn) {
     int16_t pwmR = constrain(velocity + turn, -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
     int16_t pwmL = constrain(velocity - turn, -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
