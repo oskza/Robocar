@@ -8,9 +8,9 @@ void MotorsX2::init(uint32_t freq, uint8_t res) {
     _motorL->init(freq, res);
 }
 
-void MotorsX2::stop() { 
+void MotorsX2::stop() {
     _motorR->stop(); 
-    _motorL->stop(); 
+    _motorL->stop();
 }
 
 void MotorsX2::move(int16_t velocity, int16_t turn) {
