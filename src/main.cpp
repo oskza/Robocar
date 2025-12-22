@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <MotionController.h>
+#include "MotionController/MotionController.h"
 
 // #define DEBUG_ENABLED
 // #define COMPASS_ENABLED
-#define JOYSTIC_ENABLED
-// #define WIFI_ENABLED
+// #define JOYSTIC_ENABLED
+#define WIFI_ENABLED
 
 #define ENCODER_R_PIN       32
 #define ENCODER_L_PIN       33
@@ -41,11 +41,11 @@ CompassBMM150 compass;
 #endif
 
 #ifdef WIFI_ENABLED
-#include <WifiManager.h>
+#include <WifiController/WifiController.h>
 #include <wifi_creds.h>
 #define WIFI_CHECK_MS       3000
 Timer timerWifi;
-WifiManager wifiManager(&timerWifi);
+WifiController wifiController(&timerWifi);
 #endif
 
 #ifdef JOYSTIC_ENABLED
@@ -84,12 +84,12 @@ void setup() {
     IPAddress subnet(SUBNET_1, SUBNET_2, SUBNET_3, SUBNET_4);
     IPAddress primaryDNS(PRIMARY_DNS_1, PRIMARY_DNS_2, PRIMARY_DNS_3, PRIMARY_DNS_4);
     IPAddress secondaryDNS(SECONDARY_DNS_1, SECONDARY_DNS_2, SECONDARY_DNS_3, SECONDARY_DNS_4);
-    if (!wifiManager.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_CHECK_MS)) {
+    if (!wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_CHECK_MS)) {
 #ifdef DEBUG_ENABLED
         Serial.println("Wifi init failed");
 #endif
     }
-    if (wifiManager.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {
+    if (wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {
 #ifdef DEBUG_ENABLED
         Serial.println("Wifi connect failed");
 #endif
@@ -121,7 +121,7 @@ void loop() {
 #endif
 
 #ifdef WIFI_ENABLED
-    if (wifiManager.tick()) {
+    if (wifiController.tick()) {
 #ifdef DEBUG_ENABLED
         Serial.println("Wifi check passed successfully");
 #endif

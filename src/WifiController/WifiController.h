@@ -1,16 +1,15 @@
-#ifndef WIFI_MANAGER_H
-#define WIFI_MANAGER_H
+#ifndef WIFI_CONTROLLER_H
+#define WIFI_CONTROLLER_H
 #include "WiFi.h"
 #include <Timer.h>
 
-class WifiManager {
+class WifiController {
 private:
     Timer *_timer;
 public:
-    WifiManager(Timer *timer);
+    WifiController(Timer *timer);
     bool init(IPAddress localIP, IPAddress gateway, IPAddress subnet, 
-                IPAddress primaryDNS, IPAddress secondaryDNS, 
-                uint32_t msCheckInterval = 1000);
+                IPAddress primaryDNS, IPAddress secondaryDNS, uint32_t msInterval);
     wl_status_t connect(const char *ssid, const char *password);
     bool checkConnectivity();
     bool tick();
