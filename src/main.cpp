@@ -4,7 +4,7 @@
 // #define DEBUG_ENABLED
 // #define COMPASS_ENABLED
 // #define JOYSTIC_ENABLED
-#define WIFI_ENABLED
+// #define WIFI_ENABLED
 
 #define ENCODER_R_PIN       32
 #define ENCODER_L_PIN       33
@@ -107,17 +107,13 @@ void loop() {
             motionController.move(vert, horz);
         }
     }
-#else
-    static bool isMoving = true;
-    if (isMoving 
-        // && motionController.moveForMs(180, 0, 3000)
-        && motionController.moveForMeters(180, 0, 1.20)
-    ) { 
-        isMoving = false; 
-#ifdef DEBUG_ENABLED
-        Serial.println("Stopped moving successfully");
 #endif
-    }
+
+#ifdef COMPASS_ENABLED
+    float degree = compass.getCompassDegree();
+#ifdef DEBUG_ENABLED
+    Serial.print("Compass Degree: "); Serial.println(degree);
+#endif
 #endif
 
 #ifdef WIFI_ENABLED
