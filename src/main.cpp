@@ -1,11 +1,12 @@
 #include <Arduino.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
 #include <CompassBMM150.h>
 #include "MotionController/MotionController.h"
 #include "AnalogJoysticController/AnalogJoysticController.h"
 #include <WifiController/WifiController.h>
 #include <wifi_creds.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 
 #define MOTOR_R_PWM_PIN     25
 #define MOTOR_R_FWD_PIN     18
@@ -31,13 +32,15 @@
 #define JOYSTIC_DEADZONE    7
 #define JOYSTIC_INTERVAL_MS 20
 
-#define WIFI_CHECK_MS 3000
+#define WIFI_INTERVAL_MS 3000
 
 #define WEBSOCKET_PORT        80
 #define WEBSOCKET_MAX_CLIENTS 2
 #define WEBSOCKET_INTERVAL_MS 2000
 
-Timer timerMotion, timerJoystic, timerWifi, timerWebSocket;
+#define REPORT_INTERVAL_MS    5000
+
+Timer timerMotion, timerJoystic, timerWifi, timerWebSocket, timerReport;
 
 Motor motorR(MOTOR_R_PWM_PIN, MOTOR_R_FWD_PIN, MOTOR_R_BCK_PIN, MOTOR_R_PWM_CHANNEL);
 Motor motorL(MOTOR_L_PWM_PIN, MOTOR_L_FWD_PIN, MOTOR_L_BCK_PIN, MOTOR_L_PWM_CHANNEL, MOTOR_L_CORR);
@@ -45,10 +48,10 @@ Encoder encoderR(ENCODER_R_PIN);
 Encoder encoderL(ENCODER_L_PIN);
 MotionController motionController(&motorR, &motorL, &encoderR, &encoderL, &timerMotion);
 
+CompassBMM150 compass;
+
 AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
 AnalogJoysticController joysticController(&joystic, &timerJoystic, JOYSTIC_DEADZONE);
-
-CompassBMM150 compass;
 
 WifiController wifiController(&timerWifi);
 
@@ -58,17 +61,63 @@ static AsyncWebSocket ws("/ws");
 void IRAM_ATTR onRightEncoder() { encoderR.tick(); }
 void IRAM_ATTR onLeftEncoder()  { encoderL.tick(); }
 
-void initWifi() {
-    IPAddress localIP(LOCAL_IP_1, LOCAL_IP_2, LOCAL_IP_3, LOCAL_IP_4);
-    IPAddress gateway(GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);
-    IPAddress subnet(SUBNET_1, SUBNET_2, SUBNET_3, SUBNET_4);
-    IPAddress primaryDNS(PRIMARY_DNS_1, PRIMARY_DNS_2, PRIMARY_DNS_3, PRIMARY_DNS_4);
-    IPAddress secondaryDNS(SECONDARY_DNS_1, SECONDARY_DNS_2, SECONDARY_DNS_3, SECONDARY_DNS_4);
-    if (!wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_CHECK_MS)) {/*...*/}
-    if (wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {/*...*/}
+void handleCommand(JsonDocument &doc) {
+    const char* cmd = doc["cmd"];
+    if (!cmd) 
+        return;
+
+    if (strcmp(cmd, "stop") == 0) {
+        motionController.stop();
+        return;
+    }
+    if (strcmp(cmd, "move") == 0) {
+        int velocity = doc["payload"]["velocity"] | 0;
+        int turn = doc["payload"]["turn"] | 0;
+        JsonObject dur = doc["payload"]["duration"];
+        const char* durUnit = dur["unit"] | "ms";
+        float durValue = dur["value"] | 0;
+
+        if (durValue == 0) {
+            motionController.move(velocity, turn);
+            return;
+        }
+
+        if (strcmp(durUnit, "ms") == 0) {
+            motionController.moveForMs(velocity, turn, durValue);
+            return;
+        }
+
+        if (strcmp(durUnit, "meters") == 0) {
+            motionController.moveForMeters(velocity, turn, durValue);
+        }
+    }
 }
 
-void onWSEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+void wsSendJson(JsonDocument &doc) {
+    char buffer[512];
+    serializeJson(doc, buffer, sizeof(buffer));
+    ws.textAll(buffer);
+}
+
+void wsHandleText(AsyncWebSocketClient *client, char *data) {
+    StaticJsonDocument<256> doc;
+
+    DeserializationError err = deserializeJson(doc, data);
+    if (err) {
+        client->text("{\"type\":\"error\",\"message\":\"Invalid JSON\"}");
+        return;
+    }
+
+    const char* type = doc["type"];
+    if (!type) 
+        return;
+
+    if (strcmp(type, "command") == 0) {
+        handleCommand(doc);
+    }
+}
+
+void wsOnEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     (void)len;
     switch (type) {
         case WS_EVT_CONNECT:
@@ -86,29 +135,53 @@ void onWSEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
             break;
         case WS_EVT_DATA:
             AwsFrameInfo *info = (AwsFrameInfo *)arg;
-            if (info->final && info->index == 0 && info->len == len) {
-                if (info->opcode == WS_TEXT) {
-                    data[len] = 0;
-                    Serial.printf("%s\n", (char *)data);
-                    client->ping();
-                }
+            if (info->final && info->opcode == WS_TEXT) {
+                data[len] = 0;
+                wsHandleText(client, (char*)data);
             }
             break;
     }
 }
 
-void initWS() {
-    ws.onEvent(onWSEvent);
+void wsMiddleware(AsyncWebServerRequest *request, ArMiddlewareNext next) {
+    if (ws.count() >= WEBSOCKET_MAX_CLIENTS)
+        request->send(503, "text/plain", "Server is busy");
+    else
+        next();
+}
 
-    server.addHandler(&ws).addMiddleware([] (AsyncWebServerRequest *request, ArMiddlewareNext next) {
-        if (ws.count() >= WEBSOCKET_MAX_CLIENTS)
-            request->send(503, "text/plain", "Server is busy");
-        else
-            next();
-    });
+void wsInit() {
+    ws.onEvent(wsOnEvent);
+    server.addHandler(&ws).addMiddleware(wsMiddleware);
     server.begin();
     timerWebSocket.setTimeout(WEBSOCKET_INTERVAL_MS);
     timerWebSocket.start();
+}
+
+void createReport(JsonDocument &doc) {
+    doc["type"] = "report";
+    doc["uptime"] = millis();
+
+    JsonObject wifi = doc.createNestedObject("wifi");
+    bool connected = wifiController.isConnected();
+    wifi["connected"] = connected;
+    if (connected)
+        wifi["ip"] = wifiController.getIP();
+        wifi["rssi"] = wifiController.getRSSI();
+
+    JsonObject memory = doc.createNestedObject("memory");
+    memory["free"] = ESP.getFreeHeap();
+    memory["total"] = ESP.getHeapSize();
+    memory["maxAlloc"] = ESP.getMaxAllocHeap();
+
+    doc["heading"] = compass.getCompassDegree();
+    doc["clients"] = ws.count();
+}
+
+void sendReport() {
+    StaticJsonDocument<512> report;
+    createReport(report);
+    wsSendJson(report);
 }
 
 void setup() {
@@ -116,13 +189,22 @@ void setup() {
 
     motionController.init(onRightEncoder, onLeftEncoder, MOTOR_PWM_FREQ, MOTOR_PWM_RES);
 
-    joysticController.init(JOYSTIC_INTERVAL_MS);
-
     if (!compass.init()) {/*...*/}
 
-    initWifi();
+    joysticController.init(JOYSTIC_INTERVAL_MS);
 
-    initWS();
+    IPAddress localIP(LOCAL_IP_1, LOCAL_IP_2, LOCAL_IP_3, LOCAL_IP_4);
+    IPAddress gateway(GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);
+    IPAddress subnet(SUBNET_1, SUBNET_2, SUBNET_3, SUBNET_4);
+    IPAddress primaryDNS(PRIMARY_DNS_1, PRIMARY_DNS_2, PRIMARY_DNS_3, PRIMARY_DNS_4);
+    IPAddress secondaryDNS(SECONDARY_DNS_1, SECONDARY_DNS_2, SECONDARY_DNS_3, SECONDARY_DNS_4);
+    if (!wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_INTERVAL_MS)) {/*...*/}
+    if (wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {/*...*/}
+
+    wsInit();
+
+    timerReport.setTimeout(REPORT_INTERVAL_MS);
+    timerReport.start();
 }
 
 void loop() {
@@ -135,15 +217,15 @@ void loop() {
         }
     }
 
-    float degree = compass.getCompassDegree();
-
     if (wifiController.tick()) {/*...*/}
 
-    if(timerWebSocket.tick()) {
-        ws.printfAll("value: %.4f", (10.0 / 3.0));
-        // ws.textAll("value: 3.3333"); 
-        Serial.printf("Clients: %u/%u\n", ws.count(), ws.getClients().size());
+    if (timerWebSocket.tick()) {
         ws.cleanupClients(WEBSOCKET_MAX_CLIENTS);
         timerWebSocket.refresh();
+    }
+
+    if (timerReport.tick() && ws.count() > 0) {
+        sendReport();
+        timerReport.refresh();
     }
 }
