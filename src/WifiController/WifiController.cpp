@@ -9,16 +9,6 @@ bool WifiController::init(IPAddress localIP, IPAddress gateway, IPAddress subnet
     return WiFi.config(localIP, gateway, subnet, primaryDNS, secondaryDNS);
 }
 
-wl_status_t WifiController::connect(const char *ssid, const char *password) {
-    WiFi.begin(ssid, password);
-    _timer->start();
-    return WiFi.status();
-}
-
-bool WifiController::checkConnectivity() {
-    return WiFi.status() == WL_CONNECTED || WiFi.reconnect();
-}
-
 bool WifiController::tick() {
     if (!_timer->tick())
         return false;
@@ -27,4 +17,21 @@ bool WifiController::tick() {
     return res;
 }
 
+wl_status_t WifiController::connect(const char *ssid, const char *password) {
+    WiFi.begin(ssid, password);
+    _timer->start();
+    return WiFi.status();
+}
+
+bool WifiController::checkConnectivity() {
+    return isConnected() || WiFi.reconnect();
+}
+
+
+bool WifiController::isConnected() {
+    return WiFi.status() == WL_CONNECTED;
+}
+
 IPAddress WifiController::getIP() { return WiFi.localIP(); }
+
+int8_t WifiController::getRSSI() { return WiFi.RSSI(); }

@@ -10,9 +10,11 @@ public:
     WifiController(Timer *timer);
     bool init(IPAddress localIP, IPAddress gateway, IPAddress subnet, 
                 IPAddress primaryDNS, IPAddress secondaryDNS, uint32_t msInterval);
+    bool tick();
     wl_status_t connect(const char *ssid, const char *password);
     bool checkConnectivity();
-    bool tick();
+    bool isConnected();
     IPAddress getIP();
+    int8_t getRSSI();
 };
 #endif
