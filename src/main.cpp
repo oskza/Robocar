@@ -61,12 +61,56 @@ static AsyncWebSocket ws("/ws");
 void IRAM_ATTR onRightEncoder() { encoderR.tick(); }
 void IRAM_ATTR onLeftEncoder()  { encoderL.tick(); }
 
+void handleMoveAutoCommand(JsonObject &payload) {
+    int16_t velocity = payload["velocity"] | 0;
+    int16_t turn = payload["turn"] | 0;
+
+    if (!payload.containsKey("duration")) {
+        // motionController.moveManual(velocity, turn);
+        return;
+    }
+
+    JsonObject dur = payload["duration"];
+    const char *durUnit = dur["unit"] | "ms";
+
+    if (strcmp(durUnit, "ms") == 0) {
+        uint32_t ms = dur["value"] | 0;
+        motionController.moveForMs(velocity, turn, ms);
+        return;
+    }
+
+    if (strcmp(durUnit, "meters") == 0) {
+        float meters = dur["value"] | 0.00f;
+        motionController.moveForMeters(velocity, turn, meters);
+    }
+}
+
+void handleMoveManualCommand(const char *dir) {
+    if (strcmp(dir, "forward") == 0) {
+        motionController.moveForward();
+        return;
+    }
+    if (strcmp(dir, "backward") == 0) {
+        motionController.moveBackward();
+        return;
+    }
+    if (strcmp(dir, "left") == 0) {
+        motionController.moveLeft();
+        return;
+    }
+    if (strcmp(dir, "right") == 0) {
+        motionController.moveRight();
+    }
+}
+
 void handleCommand(JsonDocument &doc) {
     const char* cmd = doc["cmd"];
     if (!cmd) 
         return;
     if (strcmp(cmd, "set-mode") == 0) {
-        motionController.setMode(doc["payload"]);
+        const char *payload = doc["payload"];
+        uint8_t mode = (strcmp(payload, "auto") == 0) ? MOTION_MODE_AUTO : MOTION_MODE_MANUAL;
+        motionController.setMode(mode);
         return;
     }
     if (strcmp(cmd, "stop") == 0) {
@@ -77,44 +121,12 @@ void handleCommand(JsonDocument &doc) {
 
         if(motionController.isModeManual()) {
             const char *dir = doc["payload"];
-
-            if (strcmp(dir, "forward") == 0) {
-                motionController.moveForward();
-                return;
-            }
-            if (strcmp(dir, "backward") == 0) {
-                motionController.moveBackward();
-                return;
-            }
-            if (strcmp(dir, "left") == 0) {
-                motionController.moveLeft();
-                return;
-            }
-            if (strcmp(dir, "right") == 0) {
-                motionController.moveRight();
-            }
+            handleMoveManualCommand(dir);
             return;
         }
 
-        int16_t velocity = doc["payload"]["velocity"] | 0;
-        int16_t turn = doc["payload"]["turn"] | 0;
-        JsonObject dur = doc["payload"]["duration"];
-        const char *durUnit = dur["unit"] | "ms";
-        float durValue = dur["value"] | 0;
-
-        if (durValue == 0) {
-            motionController.moveManual(velocity, turn);
-            return;
-        }
-
-        if (strcmp(durUnit, "ms") == 0) {
-            motionController.moveForMs(velocity, turn, durValue);
-            return;
-        }
-
-        if (strcmp(durUnit, "meters") == 0) {
-            motionController.moveForMeters(velocity, turn, durValue);
-        }
+        JsonObject payload = doc["payload"];
+        handleMoveAutoCommand(payload);
     }
 }
 
@@ -185,7 +197,13 @@ void wsInit() {
 
 void createReport(JsonDocument &doc) {
     doc["type"] = "report";
+
     doc["uptime"] = millis();
+
+    JsonObject motion = doc.createNestedObject("motion");
+    motion["mode"] = (motionController.isModeAuto()) ? "auto" : "manual";
+    motion["moving"] = motionController.isMoving();
+    motion["heading"] = compass.getCompassDegree();
 
     JsonObject wifi = doc.createNestedObject("wifi");
     bool connected = wifiController.isConnected();
@@ -194,15 +212,13 @@ void createReport(JsonDocument &doc) {
         wifi["ip"] = wifiController.getIP();
         wifi["rssi"] = wifiController.getRSSI();
 
-    doc["clients"] = ws.count();
+    JsonObject websocket = doc.createNestedObject("websocket");
+    websocket["clients"] = ws.count();
 
-    JsonObject memory = doc.createNestedObject("memory");
-    memory["free"] = ESP.getFreeHeap();
-    memory["total"] = ESP.getHeapSize();
-    memory["maxAlloc"] = ESP.getMaxAllocHeap();
-
-    doc["mode"] = (motionController.isModeAuto()) ? "auto" : "manual";
-    doc["heading"] = compass.getCompassDegree();
+    JsonObject heap = doc.createNestedObject("heap");
+    heap["free"] = ESP.getFreeHeap();
+    heap["total"] = ESP.getHeapSize();
+    heap["maxAlloc"] = ESP.getMaxAllocHeap();
 }
 
 void sendReport() {
@@ -212,13 +228,13 @@ void sendReport() {
 }
 
 void setup() {
-    Serial.begin(115200);
+    // Serial.begin(115200);
 
     motionController.init(onRightEncoder, onLeftEncoder, MOTOR_PWM_FREQ, MOTOR_PWM_RES);
 
     if (!compass.init()) {/*...*/}
 
-    joysticController.init(JOYSTIC_INTERVAL_MS);
+    // joysticController.init(JOYSTIC_INTERVAL_MS);
 
     IPAddress localIP(LOCAL_IP_1, LOCAL_IP_2, LOCAL_IP_3, LOCAL_IP_4);
     IPAddress gateway(GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);
@@ -236,13 +252,13 @@ void setup() {
 
 void loop() {
     if (motionController.isModeManual()) {
-        // int16_t vert, horz;
-        // if(joysticController.tick(vert, horz)) {
-        //     if(joysticController.isInDeadzone(vert, horz))
-        //         motionController.stop();
-        //     else
-        //         motionController.moveManual(vert, horz);
-        // }
+        int16_t vert, horz;
+        if(joysticController.tick(vert, horz)) {
+            if(joysticController.isInDeadzone(vert, horz))
+                motionController.stop();
+            else
+                motionController.moveManual(vert, horz);
+        }
     } else {
         motionController.tick();
     }
