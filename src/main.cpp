@@ -33,6 +33,8 @@
 #define JOYSTIC_DEADZONE        112
 #define JOYSTIC_INTERVAL_MS     20
 
+CompassBMM150 compass;
+
 Timer timerDrive;
 Encoder encoderRight(ENCODER_R_PIN);
 Encoder encoderLeft(ENCODER_L_PIN);
@@ -47,14 +49,41 @@ AnalogJoysticController joysticController(joystic, timerJoystic, JOYSTIC_DEADZON
 void IRAM_ATTR onRightEncoder() { encoderRight.tick(); }
 void IRAM_ATTR onLeftEncoder() { encoderLeft.tick(); }
 
+void createMotionStatus(JsonObject &motion) {
+    motion["heading"] = compass.getCompassDegree();
+    motion["driving"] = driveController.isDriving();
+    if (driveController.isDriving())
+        motion["distance"] = driveController.getDistanceMeters();
+}
+
+void createHeapStatus(JsonObject &heap) {
+    heap["free"] = ESP.getFreeHeap();
+    heap["total"] = ESP.getHeapSize();
+    heap["maxAlloc"] = ESP.getMaxAllocHeap();
+}
+
+void createStatus(JsonDocument &doc) {
+    doc["type"] = "status";
+    doc["uptime"] = millis();
+    JsonObject heap = doc["heap"].to<JsonObject>();
+    createHeapStatus(heap);
+    JsonObject motion = doc["motion"].to<JsonObject>();
+    createMotionStatus(motion);
+}
+
 void setup() {
-    // Serial.begin(115200);
+    Serial.begin(115200);
+
+    if (!compass.init()) {/*...*/}
 
     driveController.init(onRightEncoder, onLeftEncoder, MOTOR_PWM_FREQ, MOTOR_PWM_RES);
 
     // joysticController.init(JOYSTIC_INTERVAL_MS);
 
-    driveController.driveDistance(150, 1.2);
+    StaticJsonDocument<512> status;
+    createStatus(status);
+    serializeJson(status, Serial);
+    Serial.println(); 
 }
 
 void loop() {
