@@ -2,6 +2,9 @@
 #define ANALOG_JOYSTIC_H
 #include <Arduino.h>
 
+#define ANALOG_JOYSTIC_MAX_VALUE 4095
+#define ANALOG_JOYSTIC_MIN_VALUE 0
+
 class AnalogJoystic {
 private:
   uint8_t _vertPin;

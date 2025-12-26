@@ -2,11 +2,12 @@
 
 AnalogJoystic::AnalogJoystic(uint8_t vertPin, uint8_t horzPin) 
                                 : _vertPin(vertPin), _horzPin(horzPin), 
-                                    _vertCenter(2048), _horzCenter(2048) {}
+                                    _vertCenter(ANALOG_JOYSTIC_MAX_VALUE / 2), 
+                                    _horzCenter(ANALOG_JOYSTIC_MAX_VALUE / 2) {}
 
-void AnalogJoystic::calibrateVerticalCenter() { _vertCenter = analogRead(_vertPin); }
+void AnalogJoystic::calibrateVerticalCenter() { _vertCenter = readVertical(); }
 
-void AnalogJoystic::calibrateHorizontalCenter() { _horzCenter = analogRead(_horzPin); }
+void AnalogJoystic::calibrateHorizontalCenter() { _horzCenter = readHorizontal(); }
 
 void AnalogJoystic::calibrateCenter() { 
     calibrateVerticalCenter(); 
