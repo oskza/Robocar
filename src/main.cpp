@@ -33,6 +33,8 @@
 #define JOYSTIC_DEADZONE        112
 #define JOYSTIC_INTERVAL_MS     20
 
+#define WIFI_INTERVAL_MS        3000
+
 CompassBMM150 compass;
 
 Timer timerDrive;
@@ -45,6 +47,9 @@ DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft
 Timer timerJoystic;
 AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
 AnalogJoysticController joysticController(joystic, timerJoystic, JOYSTIC_DEADZONE);
+
+Timer timerWifi;
+WifiController wifiController(&timerWifi);
 
 void IRAM_ATTR onRightEncoder() { encoderRight.tick(); }
 void IRAM_ATTR onLeftEncoder() { encoderLeft.tick(); }
@@ -62,6 +67,14 @@ void createHeapStatus(JsonObject &heap) {
     heap["maxAlloc"] = ESP.getMaxAllocHeap();
 }
 
+void createWifiStatus(JsonObject &wifi) {
+    bool connected = wifiController.isConnected();
+    wifi["connected"] = connected;
+    if (connected)
+        wifi["ip"] = wifiController.getIP();
+        wifi["rssi"] = wifiController.getRSSI();
+}
+
 void createStatus(JsonDocument &doc) {
     doc["type"] = "status";
     doc["uptime"] = millis();
@@ -69,6 +82,15 @@ void createStatus(JsonDocument &doc) {
     createHeapStatus(heap);
     JsonObject motion = doc["motion"].to<JsonObject>();
     createMotionStatus(motion);
+    JsonObject wifi = doc["wifi"].to<JsonObject>();
+    createWifiStatus(wifi);
+}
+
+void printStatus() {
+    StaticJsonDocument<512> status;
+    createStatus(status);
+    serializeJson(status, Serial);
+    Serial.println();
 }
 
 void setup() {
@@ -80,10 +102,15 @@ void setup() {
 
     // joysticController.init(JOYSTIC_INTERVAL_MS);
 
-    StaticJsonDocument<512> status;
-    createStatus(status);
-    serializeJson(status, Serial);
-    Serial.println(); 
+    IPAddress localIP(LOCAL_IP_1, LOCAL_IP_2, LOCAL_IP_3, LOCAL_IP_4);
+    IPAddress gateway(GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);
+    IPAddress subnet(SUBNET_1, SUBNET_2, SUBNET_3, SUBNET_4);
+    IPAddress primaryDNS(PRIMARY_DNS_1, PRIMARY_DNS_2, PRIMARY_DNS_3, PRIMARY_DNS_4);
+    IPAddress secondaryDNS(SECONDARY_DNS_1, SECONDARY_DNS_2, SECONDARY_DNS_3, SECONDARY_DNS_4);
+    if (!wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_INTERVAL_MS)
+            || wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {/*...*/}
+
+    printStatus();
 }
 
 void loop() {
@@ -93,4 +120,6 @@ void loop() {
         driveController.driveDifferential(vert, horz);
 
     driveController.tick();
+
+    if (wifiController.tick()) {/*...*/}
 }
