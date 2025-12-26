@@ -8,32 +8,34 @@
 #include "WifiController/WifiController.h"
 #include <wifi_creds.h>
 
-#define MOTOR_R_PWM_PIN         25
-#define MOTOR_R_FWD_PIN         18
-#define MOTOR_R_BCK_PIN         19
+#define MOTOR_R_PWM_PIN             25
+#define MOTOR_R_FWD_PIN             18
+#define MOTOR_R_BCK_PIN             19
 
-#define MOTOR_L_PWM_PIN         26
-#define MOTOR_L_FWD_PIN         27
-#define MOTOR_L_BCK_PIN         14
+#define MOTOR_L_PWM_PIN             26
+#define MOTOR_L_FWD_PIN             27
+#define MOTOR_L_BCK_PIN             14
 
-#define MOTOR_R_PWM_CHANNEL     0
-#define MOTOR_L_PWM_CHANNEL     1
+#define MOTOR_R_PWM_CHANNEL         0
+#define MOTOR_L_PWM_CHANNEL         1
 
-#define MOTOR_PWM_FREQ          1000
-#define MOTOR_PWM_RES           8
+#define MOTOR_PWM_FREQ              1000
+#define MOTOR_PWM_RES               8
 
-#define MOTOR_R_CORR            1
-#define MOTOR_L_CORR            1.0395f
+#define MOTOR_R_CORR                1
+#define MOTOR_L_CORR                1.0395f
 
-#define ENCODER_R_PIN           32
-#define ENCODER_L_PIN           33
+#define ENCODER_R_PIN               32
+#define ENCODER_L_PIN               33
 
-#define JOYSTIC_VERT_PIN        34
-#define JOYSTIC_HORZ_PIN        35
-#define JOYSTIC_DEADZONE        112
-#define JOYSTIC_INTERVAL_MS     20
+#define JOYSTIC_VERT_PIN            34
+#define JOYSTIC_HORZ_PIN            35
+#define JOYSTIC_DEADZONE            112
+#define JOYSTIC_INTERVAL_MS         20
 
-#define WIFI_INTERVAL_MS        3000
+#define WIFI_INTERVAL_MS            3000
+
+#define STATUS_REPORT_INTERVAL_MS   5000
 
 CompassBMM150 compass;
 
@@ -50,6 +52,8 @@ AnalogJoysticController joysticController(joystic, timerJoystic, JOYSTIC_DEADZON
 
 Timer timerWifi;
 WifiController wifiController(&timerWifi);
+
+Timer timerReport;
 
 void IRAM_ATTR onRightEncoder() { encoderRight.tick(); }
 void IRAM_ATTR onLeftEncoder() { encoderLeft.tick(); }
@@ -86,10 +90,8 @@ void createStatus(JsonDocument &doc) {
     createWifiStatus(wifi);
 }
 
-void printStatus() {
-    StaticJsonDocument<512> status;
-    createStatus(status);
-    serializeJson(status, Serial);
+void printStatus(JsonDocument &doc) {
+    serializeJson(doc, Serial);
     Serial.println();
 }
 
@@ -110,7 +112,8 @@ void setup() {
     if (!wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, WIFI_INTERVAL_MS)
             || wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {/*...*/}
 
-    printStatus();
+    timerReport.setTimeout(STATUS_REPORT_INTERVAL_MS);
+    timerReport.start();
 }
 
 void loop() {
@@ -122,4 +125,12 @@ void loop() {
     driveController.tick();
 
     if (wifiController.tick()) {/*...*/}
+
+    if (timerReport.tick()) {
+        // if (ws.count() == 0) {}
+        StaticJsonDocument<512> status;
+        createStatus(status);
+        printStatus(status);
+        timerReport.refresh();
+    }
 }
