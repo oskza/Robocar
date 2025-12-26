@@ -1,11 +1,20 @@
 #include "DriveController.h"
 
-DriveController::DriveController(Motor &right, Motor &left) : _right(right), _left(left), _isDriving(false) {}
+DriveController::DriveController(Motor &right, Motor &left, Timer &timer) 
+                                : _right(right), _left(left), _timer(timer), _isDriving(false) {}
 
 void DriveController::init(uint32_t freq, uint8_t res) {
     _right.init(freq, res);
     _left.init(freq, res);
+    _timer.reset();
     _isDriving = false;
+}
+
+void DriveController::tick() {
+    if (!_isDriving || !_timer.isRunning() || !_timer.tick())
+        return;
+    stop();
+    _timer.reset();
 }
 
 void DriveController::stop() {
@@ -51,6 +60,16 @@ void DriveController::driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, 
                         ? -(int16_t)turnPWM
                         : 0;
     driveDifferential(velocity, turn);
+}
+
+void DriveController::driveFor(int16_t velocity, int16_t turn, uint32_t ms) {
+    _timer.setTimeout(ms);
+    _timer.start();
+    driveDifferential(velocity, turn);
+}
+
+void DriveController::driveDistance(int16_t velocity, float meters) {
+    // ...
 }
 
 bool DriveController::isDriving() const { return _isDriving; }

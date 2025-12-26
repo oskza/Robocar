@@ -30,9 +30,10 @@
 #define JOYSTIC_DEADZONE        112
 #define JOYSTIC_INTERVAL_MS     20
 
+Timer timerDrive;
 Motor motorRight(MOTOR_R_PWM_PIN, MOTOR_R_FWD_PIN, MOTOR_R_BCK_PIN, MOTOR_R_PWM_CHANNEL, MOTOR_R_CORR);
 Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_FWD_PIN, MOTOR_L_BCK_PIN, MOTOR_L_PWM_CHANNEL, MOTOR_L_CORR);
-DriveController driveController(motorRight, motorLeft);
+DriveController driveController(motorRight, motorLeft, timerDrive);
 
 Timer timerJoystic;
 AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
@@ -43,12 +44,19 @@ void setup() {
 
     driveController.init(MOTOR_PWM_FREQ, MOTOR_PWM_RES);
 
-    joysticController.init(JOYSTIC_INTERVAL_MS);
+    // joysticController.init(JOYSTIC_INTERVAL_MS);
+
+    delay(1000);
+    driveController.driveFor(150, 0, 5000);
 }
 
 void loop() {
+
     int16_t vert, horz;
     if(joysticController.tick(vert, horz)
             && (vert != 0 || horz != 0 || driveController.isDriving()))
         driveController.driveDifferential(vert, horz);
+
+    driveController.tick();
+
 }
