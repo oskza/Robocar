@@ -1,27 +1,43 @@
 #include "DriveController.h"
 
-DriveController::DriveController(Motor &right, Motor &left, Timer &timer) 
-                                : _right(right), _left(left), _timer(timer), _isDriving(false) {}
+DriveController::DriveController(Motor &motorRight, Motor &motorLeft, 
+                                    Encoder &encoderRight, Encoder &encoderLeft, Timer &timer) 
+                                : _motorRight(motorRight), _motorLeft(motorLeft), 
+                                    _encoderRight(encoderRight), _encoderLeft(encoderLeft), 
+                                    _timer(timer), _isDriving(false), _targetTicks(0) {}
 
-void DriveController::init(uint32_t freq, uint8_t res) {
-    _right.init(freq, res);
-    _left.init(freq, res);
+void DriveController::init(void (*onRightEncoder)(), void (*onLeftEncoder)(), uint32_t freq, uint8_t res) {
+    _motorRight.init(freq, res);
+    _motorLeft.init(freq, res);
+    _encoderRight.init(onRightEncoder);
+    _encoderLeft.init(onLeftEncoder);
     _timer.reset();
     _isDriving = false;
+    _targetTicks = 0;
 }
 
 void DriveController::tick() {
-    if (!_isDriving || !_timer.isRunning() || !_timer.tick())
+    if (!_isDriving)
         return;
-    stop();
-    _timer.reset();
+    if (_timer.isRunning() && _timer.tick()) {
+        stop();
+        _timer.reset();
+        return;
+    }
+    if (_targetTicks > 0 
+            && _targetTicks <= ((_encoderRight.getCount() + _encoderLeft.getCount()) / 2)) {
+        stop();
+        _targetTicks = 0;
+    }
 }
 
 void DriveController::stop() {
     if (!_isDriving)
         return;
-    _right.stop(); 
-    _left.stop();
+    _motorRight.stop(); 
+    _motorLeft.stop();
+    _encoderRight.reset();
+    _encoderLeft.reset();
     _isDriving = false;
 }
 
@@ -43,8 +59,8 @@ void DriveController::driveDifferential(int16_t velocity, int16_t turn) {
     }
     pwmRight = constrain(pwmRight, -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
     pwmLeft  = constrain(pwmLeft,  -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
-    _right.setSignedPWM(pwmRight);
-    _left.setSignedPWM(pwmLeft);
+    _motorRight.setSignedPWM(pwmRight);
+    _motorLeft.setSignedPWM(pwmLeft);
     _isDriving = true;
 }
 
@@ -69,7 +85,12 @@ void DriveController::driveFor(int16_t velocity, int16_t turn, uint32_t ms) {
 }
 
 void DriveController::driveDistance(int16_t velocity, float meters) {
-    // ...
+    if (meters == 0)
+        return;
+    _encoderRight.reset();
+    _encoderLeft.reset();
+    _targetTicks = METERS_TO_TICKS(meters);
+    driveDifferential(velocity, 0);
 }
 
 bool DriveController::isDriving() const { return _isDriving; }
