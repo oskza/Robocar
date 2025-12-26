@@ -30,6 +30,7 @@ public:
     void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left);
     void driveFor(int16_t velocity, int16_t turn, uint32_t ms);
     void driveDistance(int16_t velocity, float meters);
+    float getDistanceMeters() const;
     bool isDriving() const;
 };
 #endif

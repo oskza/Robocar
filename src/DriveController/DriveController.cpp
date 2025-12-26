@@ -93,4 +93,8 @@ void DriveController::driveDistance(int16_t velocity, float meters) {
     driveDifferential(velocity, 0);
 }
 
+float DriveController::getDistanceMeters() const {
+    return TICKS_TO_METERS((_encoderRight.getCount() + _encoderLeft.getCount()) / 2.0);
+}
+
 bool DriveController::isDriving() const { return _isDriving; }
