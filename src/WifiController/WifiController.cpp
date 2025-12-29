@@ -35,3 +35,11 @@ bool WifiController::isConnected() {
 IPAddress WifiController::getIP() { return WiFi.localIP(); }
 
 int8_t WifiController::getRSSI() { return WiFi.RSSI(); }
+
+void WifiController::getStatus(JsonObject &target) {
+    bool connected = isConnected();
+    target["connected"] = connected;
+    if (connected)
+        target["ip"] = getIP();
+        target["rssi"] = getRSSI();
+}
