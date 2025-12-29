@@ -5,7 +5,7 @@ Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmCha
 
 Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, float correction) 
                 : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _correction(correction), _direction(MOTOR_DIR_NONE) {}
+                    _pwmChannel(pwmChannel), _correction(correction), _direction(MOTOR_DIR_NONE), _pwm(0) {}
 
 void Motor::_writeDirection() {
     switch (_direction) {
@@ -24,13 +24,6 @@ void Motor::_writeDirection() {
     }
 }
 
-void Motor::_setDirection(uint8_t dir) {
-    if(_direction == dir)
-        return;
-    _direction = dir;
-    _writeDirection();
-}
-
 uint8_t Motor::_applyCorrection(uint8_t pwm) const {
     int16_t res = (int16_t)round(pwm * _correction);
     return (res > MOTOR_MAX_PWM)
@@ -45,24 +38,27 @@ void Motor::init(uint32_t freq, uint8_t res) {
     pinMode(_inRevPin, OUTPUT);
     ledcSetup(_pwmChannel, freq, res);
     ledcAttachPin(_pwmPin, _pwmChannel);
-    stop();
+    _pwm = 0;
+    ledcWrite(_pwmChannel, 0);
+    _direction = MOTOR_DIR_NONE;
+    digitalWrite(_inNormPin, LOW);
+    digitalWrite(_inRevPin, LOW);
 }
 
 void Motor::stop() {
-    ledcWrite(_pwmChannel, 0);
-    _setDirection(MOTOR_DIR_NONE);
+    setPWM(0);
+    setDirection(MOTOR_DIR_NONE);
 }
 
-void Motor::setPWM(uint8_t pwm) { ledcWrite(_pwmChannel, _applyCorrection(pwm)); }
+uint8_t Motor::getPWM() const { return _pwm; }
 
-void Motor::normal(uint8_t pwm) {
-    setPWM(pwm);
-    setDirNormal();
-}
-
-void Motor::reverse(uint8_t pwm) {
-    setPWM(pwm);
-    setDirReverse();
+void Motor::setPWM(uint8_t pwm) {
+    if (pwm != 0)
+        pwm = _applyCorrection(pwm);
+    if (pwm == _pwm)
+        return;
+    _pwm = pwm;
+    ledcWrite(_pwmChannel, _pwm);
 }
 
 void Motor::setSignedPWM(int16_t pwm) {
@@ -77,12 +73,19 @@ void Motor::setSignedPWM(int16_t pwm) {
     stop();
 }
 
-bool Motor::isStopped() const { return _direction == MOTOR_DIR_NONE; }
+void Motor::normal(uint8_t pwm) {
+    setPWM(pwm);
+    setDirection(MOTOR_DIR_NORMAL);
+}
 
-bool Motor::isDirNormal() const { return _direction == MOTOR_DIR_NORMAL; }
+void Motor::reverse(uint8_t pwm) {
+    setPWM(pwm);
+    setDirection(MOTOR_DIR_REVERSE);
+}
 
-bool Motor::isDirReverse() const { return _direction == MOTOR_DIR_REVERSE; }
-
-void Motor::setDirNormal() { _setDirection(MOTOR_DIR_NORMAL); }
-
-void Motor::setDirReverse() { _setDirection(MOTOR_DIR_REVERSE); }
+void Motor::setDirection(uint8_t dir) {
+    if(dir == _direction)
+        return;
+    _direction = dir;
+    _writeDirection();
+}

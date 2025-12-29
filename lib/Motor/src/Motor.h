@@ -17,22 +17,19 @@ private:
   uint8_t _pwmChannel;
   float _correction;
   uint8_t _direction;
+  uint8_t _pwm;
   void _writeDirection();
-  void _setDirection(uint8_t dir);
   uint8_t _applyCorrection(uint8_t pwm) const;
 public:
   Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel);
   Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, float correction);
   void init(uint32_t freq, uint8_t res);
   void stop();
+  uint8_t getPWM() const;
   void setPWM(uint8_t pwm);
+  void setSignedPWM(int16_t pwm);
   void normal(uint8_t pwm);
   void reverse(uint8_t pwm);
-  void setSignedPWM(int16_t pwm);
-  bool isStopped() const;
-  bool isDirNormal() const;
-  bool isDirReverse() const;
-  void setDirNormal();
-  void setDirReverse();
+  void setDirection(uint8_t dir);
 };
 #endif

@@ -1,10 +1,12 @@
 #include "DriveController.h"
 
 DriveController::DriveController(Motor &motorRight, Motor &motorLeft, 
-                                    Encoder &encoderRight, Encoder &encoderLeft, Timer &timer) 
+                                    Encoder &encoderRight, Encoder &encoderLeft, 
+                                    Timer &timer, StopWatch &stopwatch) 
                                 : _motorRight(motorRight), _motorLeft(motorLeft), 
                                     _encoderRight(encoderRight), _encoderLeft(encoderLeft), 
-                                    _timer(timer), _isDriving(false), _targetTicks(0) {}
+                                    _timer(timer), _stopwatch(stopwatch),
+                                    _mode(DRIVE_MODE_AUTO), _targetTicks(0) {}
 
 void DriveController::init(void (*onRightEncoder)(), void (*onLeftEncoder)(), uint32_t freq, uint8_t res) {
     _motorRight.init(freq, res);
@@ -12,12 +14,13 @@ void DriveController::init(void (*onRightEncoder)(), void (*onLeftEncoder)(), ui
     _encoderRight.init(onRightEncoder);
     _encoderLeft.init(onLeftEncoder);
     _timer.reset();
-    _isDriving = false;
+    _stopwatch.stop();
+    _mode = DRIVE_MODE_AUTO;
     _targetTicks = 0;
 }
 
 void DriveController::tick() {
-    if (!_isDriving)
+    if (!isDriving() || isModeManual())
         return;
     if (_timer.isRunning() && _timer.tick()) {
         stop();
@@ -25,20 +28,20 @@ void DriveController::tick() {
         return;
     }
     if (_targetTicks > 0 
-            && _targetTicks <= ((_encoderRight.getCount() + _encoderLeft.getCount()) / 2)) {
+            && _targetTicks <= getDistanceTicks()) {
         stop();
         _targetTicks = 0;
     }
 }
 
 void DriveController::stop() {
-    if (!_isDriving)
+    if (!isDriving())
         return;
     _motorRight.stop(); 
     _motorLeft.stop();
     _encoderRight.reset();
     _encoderLeft.reset();
-    _isDriving = false;
+    _stopwatch.stop();
 }
 
 // velocity > 0 : forward
@@ -61,7 +64,7 @@ void DriveController::driveDifferential(int16_t velocity, int16_t turn) {
     pwmLeft  = constrain(pwmLeft,  -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
     _motorRight.setSignedPWM(pwmRight);
     _motorLeft.setSignedPWM(pwmLeft);
-    _isDriving = true;
+    _stopwatch.start();
 }
 
 void DriveController::driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left) {
@@ -93,8 +96,47 @@ void DriveController::driveDistance(int16_t velocity, float meters) {
     driveDifferential(velocity, 0);
 }
 
-float DriveController::getDistanceMeters() const {
-    return TICKS_TO_METERS((_encoderRight.getCount() + _encoderLeft.getCount()) / 2.0);
+float DriveController::getDistanceTicks() const { 
+    return (_encoderRight.getCount() + _encoderLeft.getCount()) / 2.00; 
 }
 
-bool DriveController::isDriving() const { return _isDriving; }
+float DriveController::getDistanceMeters() const { 
+    float meters = TICKS_TO_METERS(getDistanceTicks());
+    Serial.printf("meters: %.4f", meters);
+    return meters; 
+}
+
+uint32_t DriveController::getDurationMs() const { return _stopwatch.lap(); }
+
+void DriveController::setMode(const char *mode) {
+    if (!mode) 
+        return;
+    if(strcmp(mode, "auto") == 0) {
+        setModeAuto();
+        return;
+    }
+    if (strcmp(mode, "manual") == 0)
+        setModeManual();
+}
+
+void DriveController::setModeAuto() { _mode = DRIVE_MODE_AUTO; }
+
+void DriveController::setModeManual() { _mode = DRIVE_MODE_MANUAL; }
+
+bool DriveController::isModeAuto() const { return _mode == DRIVE_MODE_AUTO; }
+
+bool DriveController::isModeManual() const { return _mode == DRIVE_MODE_MANUAL; }
+
+bool DriveController::isDriving() const { return _motorRight.getPWM() > 0 || _motorLeft.getPWM() > 0; }
+
+void DriveController::getStatus(JsonObject &target) const {
+    bool driving = isDriving();
+    target["mode"] = (isModeAuto()) ? "auto" : "manual";
+    target["driving"] = driving;
+    if (driving) {
+        target["pwmRight"] = _motorRight.getPWM();
+        target["pwmLeft"] = _motorLeft.getPWM();
+        target["distance"] = getDistanceMeters();
+        target["duration"] = getDurationMs();
+    }
+}
