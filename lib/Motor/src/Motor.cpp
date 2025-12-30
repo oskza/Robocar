@@ -1,11 +1,10 @@
 #include "Motor.h"
 
-Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel)
-                : Motor(pwmPin, inNormPin, inRevPin, pwmChannel, 1) {}
-
-Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, float correction) 
+Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, 
+                    uint8_t pwmChannel, float correction, uint8_t minPWM)
                 : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _correction(correction), _direction(MOTOR_DIR_NONE), _pwm(0) {}
+                    _pwmChannel(pwmChannel), _correction(correction), 
+                    _direction(MOTOR_DIR_NONE), _pwm(0), _minPWM(minPWM) {}
 
 void Motor::_writeDirection() {
     switch (_direction) {
@@ -28,8 +27,8 @@ uint8_t Motor::_applyCorrection(uint8_t pwm) const {
     int16_t res = (int16_t)round(pwm * _correction);
     return (res > MOTOR_MAX_PWM)
             ? MOTOR_MAX_PWM
-            : (res < MOTOR_MIN_PWM)
-                ? MOTOR_MIN_PWM
+            : (res < _minPWM)
+                ? _minPWM
                 : (uint8_t)res;
 }
 
