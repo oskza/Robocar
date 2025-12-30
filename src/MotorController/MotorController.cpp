@@ -1,25 +1,48 @@
-#include "DriveController.h"
+#include "MotorController.h"
 
-DriveController::DriveController(Motor &motorRight, Motor &motorLeft, 
+MotorController *MotorController::_instance = nullptr;
+
+MotorController::MotorController(Motor &motorRight, Motor &motorLeft, 
                                     Encoder &encoderRight, Encoder &encoderLeft, 
-                                    Timer &timer, StopWatch &stopwatch) 
+                                    Timer &timer, StopWatch &stopwatch,
+                                    double diameter, uint8_t slots) 
                                 : _motorRight(motorRight), _motorLeft(motorLeft), 
                                     _encoderRight(encoderRight), _encoderLeft(encoderLeft), 
                                     _timer(timer), _stopwatch(stopwatch),
-                                    _mode(DRIVE_MODE_AUTO), _targetTicks(0) {}
+                                    _diameter(diameter), _slots(slots),
+                                    _mode(DRIVE_MODE_AUTO), _targetTicks(0) { _instance = this; }
 
-void DriveController::init(void (*onRightEncoder)(), void (*onLeftEncoder)(), uint32_t freq, uint8_t res) {
+void IRAM_ATTR MotorController::_onRightEncoder() {
+    if (_instance)
+        _instance->_encoderRight.tick();
+}
+void IRAM_ATTR MotorController::_onLeftEncoder() {
+    if (_instance)
+        _instance->_encoderLeft.tick();
+}
+
+inline double MotorController::wheelCircumference(double diameter) { return diameter * PI; }
+
+inline uint32_t MotorController::metersToTicks(double meters, double circumference, uint8_t slots) {
+    return (uint32_t)round(meters / circumference * slots);
+}
+
+inline double MotorController::ticksToMeters(uint32_t ticks, double circumference, uint8_t slots) {
+    return (ticks / (double)slots) * circumference; 
+}
+
+void MotorController::init(uint32_t freq, uint8_t res) {
     _motorRight.init(freq, res);
     _motorLeft.init(freq, res);
-    _encoderRight.init(onRightEncoder);
-    _encoderLeft.init(onLeftEncoder);
+    _encoderRight.init(_onRightEncoder);
+    _encoderLeft.init(_onLeftEncoder);
     _timer.reset();
     _stopwatch.stop();
     _mode = DRIVE_MODE_AUTO;
     _targetTicks = 0;
 }
 
-void DriveController::tick() {
+void MotorController::tick() {
     if (!isDriving() || isModeManual())
         return;
     if (_timer.isRunning() && _timer.tick()) {
@@ -34,7 +57,7 @@ void DriveController::tick() {
     }
 }
 
-void DriveController::stop() {
+void MotorController::stop() {
     if (!isDriving())
         return;
     _motorRight.stop(); 
@@ -48,7 +71,7 @@ void DriveController::stop() {
 // velocity < 0 : backward
 // turn     > 0 : rotate left (CCW)
 // turn     < 0 : rotate right (CW)
-void DriveController::driveDifferential(int16_t velocity, int16_t turn) {
+void MotorController::driveDifferential(int16_t velocity, int16_t turn) {
     if (velocity == 0 && turn == 0) {
         stop();
         return;
@@ -67,7 +90,7 @@ void DriveController::driveDifferential(int16_t velocity, int16_t turn) {
     _stopwatch.start();
 }
 
-void DriveController::driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left) {
+void MotorController::driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left) {
     int16_t velocity = (up && !down)
                         ? velocityPWM
                         : (down && !up)
@@ -81,34 +104,35 @@ void DriveController::driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, 
     driveDifferential(velocity, turn);
 }
 
-void DriveController::driveFor(int16_t velocity, int16_t turn, uint32_t ms) {
+void MotorController::driveFor(int16_t velocity, int16_t turn, uint32_t ms) {
+    if (ms == 0)
+        return;
     _timer.setTimeout(ms);
     _timer.start();
     driveDifferential(velocity, turn);
 }
 
-void DriveController::driveDistance(int16_t velocity, float meters) {
+void MotorController::driveDistance(int16_t velocity, float meters) {
     if (meters == 0)
         return;
     _encoderRight.reset();
     _encoderLeft.reset();
-    _targetTicks = METERS_TO_TICKS(meters);
+    _targetTicks = metersToTicks(meters, wheelCircumference(_diameter), _slots);
     driveDifferential(velocity, 0);
 }
 
-float DriveController::getDistanceTicks() const { 
+double MotorController::getDistanceTicks() const { 
     return (_encoderRight.getCount() + _encoderLeft.getCount()) / 2.00; 
 }
 
-float DriveController::getDistanceMeters() const { 
-    float meters = TICKS_TO_METERS(getDistanceTicks());
-    Serial.printf("meters: %.4f", meters);
+double MotorController::getDistanceMeters() const { 
+    float meters = ticksToMeters(getDistanceTicks(), wheelCircumference(_diameter), _slots);
     return meters; 
 }
 
-uint32_t DriveController::getDurationMs() const { return _stopwatch.lap(); }
+uint32_t MotorController::getDurationMs() const { return _stopwatch.lap(); }
 
-void DriveController::setMode(const char *mode) {
+void MotorController::setMode(const char *mode) {
     if (!mode) 
         return;
     if(strcmp(mode, "auto") == 0) {
@@ -119,17 +143,17 @@ void DriveController::setMode(const char *mode) {
         setModeManual();
 }
 
-void DriveController::setModeAuto() { _mode = DRIVE_MODE_AUTO; }
+void MotorController::setModeAuto() { _mode = DRIVE_MODE_AUTO; }
 
-void DriveController::setModeManual() { _mode = DRIVE_MODE_MANUAL; }
+void MotorController::setModeManual() { _mode = DRIVE_MODE_MANUAL; }
 
-bool DriveController::isModeAuto() const { return _mode == DRIVE_MODE_AUTO; }
+bool MotorController::isModeAuto() const { return _mode == DRIVE_MODE_AUTO; }
 
-bool DriveController::isModeManual() const { return _mode == DRIVE_MODE_MANUAL; }
+bool MotorController::isModeManual() const { return _mode == DRIVE_MODE_MANUAL; }
 
-bool DriveController::isDriving() const { return _motorRight.getPWM() > 0 || _motorLeft.getPWM() > 0; }
+bool MotorController::isDriving() const { return _motorRight.getPWM() > 0 || _motorLeft.getPWM() > 0; }
 
-void DriveController::getStatus(JsonObject &target) const {
+void MotorController::getStatus(JsonObject &target) const {
     bool driving = isDriving();
     target["mode"] = (isModeAuto()) ? "auto" : "manual";
     target["driving"] = driving;

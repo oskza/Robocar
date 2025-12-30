@@ -1,23 +1,15 @@
-#ifndef DRIVE_CONTROLLER_H
-#define DRIVE_CONTROLLER_H
+#ifndef MOTOR_CONTROLLER_H
+#define MOTOR_CONTROLLER_H
 #include <Motor.h>
 #include <Encoder.h>
 #include <Timer.h>
 #include <StopWatch.h>
 #include <ArduinoJson.h>
 
-#define ENCODER_SLOTS           20
+#define DRIVE_MODE_AUTO     0
+#define DRIVE_MODE_MANUAL   1
 
-#define WHEEL_DIAMETER          0.065
-#define WHEEL_CIRCUMFERENCE     (WHEEL_DIAMETER * 3.14159265359)
-
-#define METERS_TO_TICKS(meters) ((uint32_t)round((double)(meters) / WHEEL_CIRCUMFERENCE * ENCODER_SLOTS))
-#define TICKS_TO_METERS(ticks)  (((double)(ticks) / ENCODER_SLOTS) * WHEEL_CIRCUMFERENCE)
-
-#define DRIVE_MODE_AUTO        0
-#define DRIVE_MODE_MANUAL      1
-
-class DriveController {
+class MotorController {
 private:
     Motor &_motorRight;
     Motor &_motorLeft;
@@ -25,21 +17,29 @@ private:
     Encoder &_encoderLeft;
     Timer &_timer;
     StopWatch &_stopwatch;
+    double _diameter;
+    uint8_t _slots;
     uint8_t _mode;
     uint32_t _targetTicks;
+    static MotorController *_instance;
+    static void IRAM_ATTR _onRightEncoder();
+    static void IRAM_ATTR _onLeftEncoder();
 public:
-    DriveController(Motor &motorRight, Motor &motorLeft, 
+    MotorController(Motor &motorRight, Motor &motorLeft, 
                         Encoder &encoderRight, Encoder &encoderLeft, 
-                        Timer &timer, StopWatch &stopwatch);
-    void init(void (*onRightEncoder)(), void (*onLeftEncoder)(), uint32_t freq, uint8_t res);
+                        Timer &timer, StopWatch &stopwatch, double diameter, uint8_t slots);
+    static inline double wheelCircumference(double diameter);
+    static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots);
+    static inline double ticksToMeters(uint32_t ticks, double circumference, uint8_t slots);
+    void init(uint32_t freq, uint8_t res);
     void tick();
     void stop();
     void driveDifferential(int16_t velocity, int16_t turn);
     void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left);
     void driveFor(int16_t velocity, int16_t turn, uint32_t ms);
     void driveDistance(int16_t velocity, float meters);
-    float getDistanceTicks() const;
-    float getDistanceMeters() const;
+    double getDistanceTicks() const;
+    double getDistanceMeters() const;
     uint32_t getDurationMs() const;
     void setMode(const char *mode);
     void setModeAuto();
