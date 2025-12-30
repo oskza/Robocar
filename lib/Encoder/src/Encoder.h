@@ -9,7 +9,7 @@ private:
 public:
   Encoder(uint8_t pin);
   void init(void (*isr)());
-  void tick();
+  void IRAM_ATTR tick();
   uint32_t getCount();
   void reset();
 };

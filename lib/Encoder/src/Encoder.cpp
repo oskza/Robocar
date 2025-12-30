@@ -7,7 +7,7 @@ void Encoder::init(void (*isr)()) {
     attachInterrupt(digitalPinToInterrupt(_pin), isr, FALLING);
 }
 
-void Encoder::tick() { _count++; }
+void IRAM_ATTR Encoder::tick() { _count++; }
 
 uint32_t Encoder::getCount() {
     noInterrupts();
