@@ -28,11 +28,8 @@ public:
     MotorController(Motor &motorRight, Motor &motorLeft, 
                         Encoder &encoderRight, Encoder &encoderLeft, 
                         Timer &timer, StopWatch &stopwatch, double diameter, uint8_t slots);
-    static inline double wheelCircumference(double diameter);
-    static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots);
-    static inline double ticksToMeters(uint32_t ticks, double circumference, uint8_t slots);
     void init(uint32_t freq, uint8_t res);
-    void tick();
+    bool tick();
     void stop();
     void driveDifferential(int16_t velocity, int16_t turn);
     void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left);
@@ -48,5 +45,12 @@ public:
     bool isModeManual() const;
     bool isDriving() const;
     void getStatus(JsonObject &target) const;
+    static inline double wheelCircumference(double diameter) { return diameter * PI; }
+    static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots) { 
+        return (uint32_t)round(meters / circumference * slots); 
+    }
+    static inline double ticksToMeters(uint32_t ticks, double circumference, uint8_t slots) { 
+        return (ticks / (double)slots) * circumference; 
+    }
 };
 #endif

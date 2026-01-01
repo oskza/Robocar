@@ -21,16 +21,6 @@ void IRAM_ATTR MotorController::_onLeftEncoder() {
         _instance->_encoderLeft.tick();
 }
 
-inline double MotorController::wheelCircumference(double diameter) { return diameter * PI; }
-
-inline uint32_t MotorController::metersToTicks(double meters, double circumference, uint8_t slots) {
-    return (uint32_t)round(meters / circumference * slots);
-}
-
-inline double MotorController::ticksToMeters(uint32_t ticks, double circumference, uint8_t slots) {
-    return (ticks / (double)slots) * circumference; 
-}
-
 void MotorController::init(uint32_t freq, uint8_t res) {
     _motorRight.init(freq, res);
     _motorLeft.init(freq, res);
@@ -42,19 +32,21 @@ void MotorController::init(uint32_t freq, uint8_t res) {
     _targetTicks = 0;
 }
 
-void MotorController::tick() {
+bool MotorController::tick() {
     if (!isDriving() || isModeManual())
-        return;
+        return false;
     if (_timer.isRunning() && _timer.tick()) {
         stop();
         _timer.reset();
-        return;
+        return true;
     }
     if (_targetTicks > 0 
             && _targetTicks <= getDistanceTicks()) {
         stop();
         _targetTicks = 0;
+        return true;
     }
+    return false;
 }
 
 void MotorController::stop() {
