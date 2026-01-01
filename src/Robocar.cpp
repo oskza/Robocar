@@ -20,7 +20,7 @@ void Robocar::init(uint32_t freq, uint8_t res, uint32_t statusIntervalMs,
 
     _motorController.init(freq, res);
 
-    _joysticController.init(joysticIntervalMs);
+    // _joysticController.init(joysticIntervalMs);
 
     IPAddress localIP(LOCAL_IP_1, LOCAL_IP_2, LOCAL_IP_3, LOCAL_IP_4);
     IPAddress gateway(GATEWAY_1, GATEWAY_2, GATEWAY_3, GATEWAY_4);

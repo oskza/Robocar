@@ -5,6 +5,7 @@
 #include "AnalogJoysticController/AnalogJoysticController.h"
 #include "WebSocketController/WebSocketController.h"
 #include "WifiController/WifiController.h"
+#include <net_defaults.h>
 #include <wifi_creds.h>
 
 class Robocar {
