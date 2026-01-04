@@ -147,8 +147,8 @@ void DriveController::driveDistance(int16_t velocity, double meters) {
 }
 
 /* TODO */
-void DriveController::rotate(int16_t turn, double degree) {
-    if (degree <= 0)
+void DriveController::rotate(int16_t turn, double angle) {
+    if (angle <= 0)
         return;
 
     // _autoState = AUTO_DRIVE_STATE_ROTATION;
@@ -163,6 +163,28 @@ double DriveController::getDistanceTicks() const { return (_encoderRight.getCoun
 double DriveController::getDistanceMeters() const { return ticksToMeters(getDistanceTicks(), _circumference, _slots); }
 
 uint32_t DriveController::getDurationMs() const { return _stopwatch.lap(); }
+
+float DriveController::getHeading() const { return _compass.getCompassDegree(); }
+
+uint8_t DriveController::getRightPWM() const { return _motorRight.getPWM(); }
+
+uint8_t DriveController::getLeftPWM() const { return _motorLeft.getPWM(); }
+
+const char* DriveController::getAutoState() const {
+    switch (_autoState) {
+        case AUTO_DRIVE_STATE_IDLE:     return "idle";
+        case AUTO_DRIVE_STATE_TIME:     return "time";
+        case AUTO_DRIVE_STATE_DISTANCE: return "distance";
+        case AUTO_DRIVE_STATE_ROTATION: return "rotation";
+    }
+}
+
+const char* DriveController::getMode() const {
+    switch (_mode) {
+        case DRIVE_MODE_AUTO:   return "auto";
+        case DRIVE_MODE_MANUAL: return "manual";
+    }
+}
 
 void DriveController::setMode(const char *mode) {
     if (!mode) 
@@ -187,20 +209,3 @@ bool DriveController::isModeAuto() const { return _mode == DRIVE_MODE_AUTO; }
 bool DriveController::isModeManual() const { return _mode == DRIVE_MODE_MANUAL; }
 
 bool DriveController::isDriving() const { return _motorRight.getPWM() > 0 || _motorLeft.getPWM() > 0; }
-
-/** 
- * TODO: add state & remaining meters/ms/degree
- * TODO: move to Robocar class?
-*/
-void DriveController::getStatus(JsonObject &target) const {
-    bool driving = isDriving();
-    target["mode"] = (isModeManual()) ? "manual" : "auto";
-    target["heading"] = _compass.getCompassDegree();
-    target["driving"] = driving;
-    if (driving) {
-        target["pwmRight"] = _motorRight.getPWM();
-        target["pwmLeft"] = _motorLeft.getPWM();
-        target["distance"] = getDistanceMeters();
-        target["duration"] = getDurationMs();
-    }
-}

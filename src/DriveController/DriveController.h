@@ -5,7 +5,6 @@
 #include <CompassBMM150.h>
 #include <Timer.h>
 #include <StopWatch.h>
-#include <ArduinoJson.h>
 
 #define DRIVE_MODE_MANUAL         0 
 #define DRIVE_MODE_AUTO           1
@@ -46,17 +45,21 @@ public:
     void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left);
     void driveFor(int16_t velocity, int16_t turn, uint32_t ms);
     void driveDistance(int16_t velocity, double meters);
-    void rotate(int16_t turn, double degree);
-    bool isDriving() const;
-    bool isModeAuto() const;
-    bool isModeManual() const;
-    void setMode(const char *mode);
-    void setModeAuto();
-    void setModeManual();
-    void getStatus(JsonObject &target) const;
+    void rotate(int16_t turn, double angle);
     double getDistanceTicks() const;
     double getDistanceMeters() const;
     uint32_t getDurationMs() const;
+    float getHeading() const;
+    uint8_t getRightPWM() const;
+    uint8_t getLeftPWM() const;
+    const char* getAutoState() const;
+    const char* getMode() const;
+    void setMode(const char *mode);
+    void setModeAuto();
+    void setModeManual();
+    bool isModeAuto() const;
+    bool isModeManual() const;
+    bool isDriving() const;
     static inline double wheelCircumference(double diameter) { return diameter * PI; }
     static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots) { 
         return (uint32_t)round(meters / circumference * slots); 

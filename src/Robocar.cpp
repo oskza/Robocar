@@ -125,7 +125,7 @@ void Robocar::handleManualDrive(JsonObject &payload) {
     }
 }
 
-void Robocar::createStatus(JsonDocument &doc) {
+void Robocar::createStatus(JsonDocument &doc)  const {
     doc["type"] = "status";
     JsonObject payload = doc["payload"].to<JsonObject>();
     payload["uptime"] = millis();
@@ -133,13 +133,38 @@ void Robocar::createStatus(JsonDocument &doc) {
     JsonObject heap = payload["heap"].to<JsonObject>();
     getHeapMetrics(heap);
     JsonObject drive = payload["drive"].to<JsonObject>();
-    _driveController.getStatus(drive);
+    getDriveStatus(drive);
     JsonObject wifi = payload["wifi"].to<JsonObject>();
-    _wifiController.getStatus(wifi);
+    getWifiStatus(wifi);
 }
 
-void Robocar::getHeapMetrics(JsonObject &target) {
+void Robocar::getHeapMetrics(JsonObject &target) const {
     target["free"] = ESP.getFreeHeap();
     target["total"] = ESP.getHeapSize();
     target["maxAlloc"] = ESP.getMaxAllocHeap();
+}
+
+/** TODO: add remaining meters/ms/degree */
+void Robocar::getDriveStatus(JsonObject &target) const {
+    bool driving = _driveController.isDriving();
+    target["mode"] = _driveController.getMode();
+    target["autoState"] = _driveController.getAutoState();
+    target["heading"] = _driveController.getHeading();
+    target["driving"] = driving;
+    if (driving) {
+        target["pwmRight"] = _driveController.getRightPWM();
+        target["pwmLeft"] = _driveController.getLeftPWM();
+        target["distance"] = _driveController.getDistanceMeters();
+        target["duration"] = _driveController.getDurationMs();
+    }
+}
+
+void Robocar::getWifiStatus(JsonObject &target) const {
+    bool connected = _wifiController.isConnected();
+    target["connected"] = connected;
+    if (connected) {
+        target["ip"] = _wifiController.getIP();
+        target["subnet"] = _wifiController.getSubnet();
+        target["rssi"] = _wifiController.getRSSI();
+    }
 }

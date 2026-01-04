@@ -28,18 +28,12 @@ bool WifiController::checkConnectivity() {
 }
 
 
-bool WifiController::isConnected() {
+bool WifiController::isConnected() const {
     return WiFi.status() == WL_CONNECTED;
 }
 
-IPAddress WifiController::getIP() { return WiFi.localIP(); }
+IPAddress WifiController::getIP() const { return WiFi.localIP(); }
 
-int8_t WifiController::getRSSI() { return WiFi.RSSI(); }
+IPAddress WifiController::getSubnet() const { return WiFi.subnetMask(); }
 
-void WifiController::getStatus(JsonObject &target) {
-    bool connected = isConnected();
-    target["connected"] = connected;
-    if (connected)
-        target["ip"] = getIP();
-        target["rssi"] = getRSSI();
-}
+int8_t WifiController::getRSSI() const { return WiFi.RSSI(); }

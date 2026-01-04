@@ -1,5 +1,6 @@
 #ifndef ROBOCAR_H
 #define ROBOCAR_H
+#include <ArduinoJson.h>
 #include "DriveController/DriveController.h"
 #include "AnalogJoysticController/AnalogJoysticController.h"
 #include "WebSocketController/WebSocketController.h"
@@ -27,7 +28,9 @@ public:
     void handleCommand(JsonDocument &doc);
     void handleAutoDrive(JsonObject &payload);
     void handleManualDrive(JsonObject &payload);
-    void createStatus(JsonDocument &doc);
-    void getHeapMetrics(JsonObject &target);
+    void createStatus(JsonDocument &doc) const;
+    void getHeapMetrics(JsonObject &target) const;
+    void getDriveStatus(JsonObject &target) const;
+    void getWifiStatus(JsonObject &target) const;
 };
 #endif

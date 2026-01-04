@@ -2,7 +2,6 @@
 #define WIFI_CONTROLLER_H
 #include "WiFi.h"
 #include <Timer.h>
-#include <ArduinoJson.h>
 
 class WifiController {
 private:
@@ -14,9 +13,9 @@ public:
     bool tick();
     wl_status_t connect(const char *ssid, const char *password);
     bool checkConnectivity();
-    bool isConnected();
-    IPAddress getIP();
-    int8_t getRSSI();
-    void getStatus(JsonObject &target);
+    bool isConnected() const;
+    IPAddress getIP() const;
+    int8_t getRSSI() const;
+    IPAddress getSubnet() const;
 };
 #endif
