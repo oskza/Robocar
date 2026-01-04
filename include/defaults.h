@@ -21,7 +21,7 @@
 #define JOYSTIC_VERT_PIN            34
 #define JOYSTIC_HORZ_PIN            35
 
-#define WHEEL_DIAMETER              0.065
+#define WHEEL_DIAMETER              0.067
 
 #define MOTOR_MIN_PWM               110
 
