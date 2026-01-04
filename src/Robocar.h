@@ -1,7 +1,6 @@
 #ifndef ROBOCAR_H
 #define ROBOCAR_H
-#include <CompassBMM150.h>
-#include "MotorController/MotorController.h"
+#include "DriveController/DriveController.h"
 #include "AnalogJoysticController/AnalogJoysticController.h"
 #include "WebSocketController/WebSocketController.h"
 #include "WifiController/WifiController.h"
@@ -10,25 +9,24 @@
 
 class Robocar {
 private:
-    MotorController &_motorController;
+    DriveController &_driveController;
     WifiController &_wifiController;
     WebSocketController &_wsController;
     AnalogJoysticController &_joysticController;
-    CompassBMM150 &_compass;
     Timer &_timer;
     AsyncWebServer &_server;
     static Robocar *_instance;
     static void _handleCommandStatic(JsonDocument &doc);
 public:
-    Robocar(MotorController &motorController, WifiController &wifiController, 
+    Robocar(DriveController &driveController, WifiController &wifiController, 
                 WebSocketController &wsController, AnalogJoysticController &joysticController, 
-                CompassBMM150 &compass, Timer &timer, AsyncWebServer &server);
+                Timer &timer, AsyncWebServer &server);
     void init(uint32_t freq, uint8_t res, uint32_t statusIntervalMs, 
                 uint32_t wifiIntervalMs, uint32_t wsIntervalMs, uint32_t joysticIntervalMs);
     void tick();
     void handleCommand(JsonDocument &doc);
-    void handleDriveAutoCommand(JsonObject &payload);
-    void handleDriveManualCommand(JsonObject &payload);
+    void handleAutoDrive(JsonObject &payload);
+    void handleManualDrive(JsonObject &payload);
     void createStatus(JsonDocument &doc);
     void getHeapMetrics(JsonObject &target);
 };

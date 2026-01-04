@@ -2,12 +2,12 @@
 
 Robocar *Robocar::_instance = nullptr;
 
-Robocar::Robocar(MotorController &motorController, WifiController &wifiController, 
+Robocar::Robocar(DriveController &driveController, WifiController &wifiController, 
                     WebSocketController &wsController, AnalogJoysticController &joysticController, 
-                    CompassBMM150 &compass, Timer &timer, AsyncWebServer &server)
-                : _motorController(motorController), _wifiController(wifiController),
+                    Timer &timer, AsyncWebServer &server)
+                : _driveController(driveController), _wifiController(wifiController),
                     _wsController(wsController), _joysticController(joysticController),
-                    _compass(compass), _timer(timer), _server(server) { _instance = this; }
+                    _timer(timer), _server(server) { _instance = this; }
 
 void Robocar::_handleCommandStatic(JsonDocument &doc) {
     if (_instance)
@@ -16,9 +16,7 @@ void Robocar::_handleCommandStatic(JsonDocument &doc) {
 
 void Robocar::init(uint32_t freq, uint8_t res, uint32_t statusIntervalMs, 
                     uint32_t wifiIntervalMs, uint32_t wsIntervalMs, uint32_t joysticIntervalMs) {
-    if (!_compass.init()) {/*...*/}
-
-    _motorController.init(freq, res);
+    _driveController.init(freq, res);
 
     // _joysticController.init(joysticIntervalMs);
 
@@ -40,10 +38,10 @@ void Robocar::init(uint32_t freq, uint8_t res, uint32_t statusIntervalMs,
 void Robocar::tick() {
     int16_t vert, horz;
     if(_joysticController.tick(vert, horz)
-            && (vert != 0 || horz != 0 || _motorController.isDriving()))
-        _motorController.driveDifferential(vert, horz);
+            && (vert != 0 || horz != 0 || _driveController.isDriving()))
+        _driveController.driveDifferential(vert, horz);
     else
-        _motorController.tick();
+        _driveController.tick();        
 
     if (_wifiController.tick()) {/*...*/}
 
@@ -65,51 +63,57 @@ void Robocar::handleCommand(JsonDocument &doc) {
         return;
     if (strcmp(cmd, "set-mode") == 0) {
         const char *mode = doc["payload"] | "";
-        _motorController.setMode(mode);
+        _driveController.setMode(mode);
         return;
     }
     if (strcmp(cmd, "stop") == 0) {
-        _motorController.stop();
+        _driveController.stop();
         return;
     }
     if (strcmp(cmd, "drive") == 0) {
         JsonObject payload = doc["payload"];
         if (!payload) 
             return;
-        if(_motorController.isModeManual()) {
-            handleDriveManualCommand(payload);
+        if(_driveController.isModeManual()) {
+            handleManualDrive(payload);
             return;
         }
-        handleDriveAutoCommand(payload);
+        handleAutoDrive(payload);
     }
 }
 
-void Robocar::handleDriveAutoCommand(JsonObject &payload) {
-    int16_t velocity = payload["velocity"] | 0;
+void Robocar::handleAutoDrive(JsonObject &payload) {
     const char *navigation = payload["navigation"] | "";
     if (!navigation)
         return;
     if (strcmp(navigation, "duration") == 0) {
+        int16_t velocity = payload["velocity"] | 0;
         int16_t turn = payload["turn"] | 0;
         uint32_t ms = payload["duration"] | 0;
-        _motorController.driveFor(velocity, turn, ms);
+        _driveController.driveFor(velocity, turn, ms);
         return;
     }
     if (strcmp(navigation, "distance") == 0) {
-        float meters = payload["distance"] | 0.00f;
-        _motorController.driveDistance(velocity, meters);
+        int16_t velocity = payload["velocity"] | 0;
+        double meters = payload["distance"] | 0.00f;
+        _driveController.driveDistance(velocity, meters);
         return;
+    }
+    if (strcmp(navigation, "rotation") == 0) {
+        int16_t turn = payload["turn"] | 0;
+        double degree = payload["rotation"] | 0.00f;
+        _driveController.rotate(turn, degree);
     }
 }
 
-void Robocar::handleDriveManualCommand(JsonObject &payload) {
+void Robocar::handleManualDrive(JsonObject &payload) {
     int16_t velocity = payload["velocity"] | 0;
     int16_t turn = payload["turn"] | 0;
     const char *control = payload["control"] | "";
     if (!control)
         return;
     if (strcmp(control, "joystic") == 0) {
-        _motorController.driveDifferential(velocity, turn);
+        _driveController.driveDifferential(velocity, turn);
         return;
     }
     if (strcmp(control, "keyboard") == 0) {
@@ -117,20 +121,20 @@ void Robocar::handleDriveManualCommand(JsonObject &payload) {
         bool down = payload["down"] | false;
         bool right = payload["right"] | false;
         bool left = payload["left"] | false;
-        _motorController.driveDiscreteArcade(velocity, turn, up, down, right, left);
+        _driveController.driveDiscreteArcade(velocity, turn, up, down, right, left);
     }
 }
 
 void Robocar::createStatus(JsonDocument &doc) {
     doc["type"] = "status";
-    doc["uptime"] = millis();
-    doc["clients"] = _wsController.getClientsCount();
-    doc["heading"] = _compass.getCompassDegree();
-    JsonObject heap = doc["heap"].to<JsonObject>();
+    JsonObject payload = doc["payload"].to<JsonObject>();
+    payload["uptime"] = millis();
+    payload["clients"] = _wsController.getClientsCount();
+    JsonObject heap = payload["heap"].to<JsonObject>();
     getHeapMetrics(heap);
-    JsonObject drive = doc["drive"].to<JsonObject>();
-    _motorController.getStatus(drive);
-    JsonObject wifi = doc["wifi"].to<JsonObject>();
+    JsonObject drive = payload["drive"].to<JsonObject>();
+    _driveController.getStatus(drive);
+    JsonObject wifi = payload["wifi"].to<JsonObject>();
     _wifiController.getStatus(wifi);
 }
 
