@@ -14,21 +14,20 @@ private:
   uint8_t _inNormPin;
   uint8_t _inRevPin;
   uint8_t _pwmChannel;
-  float _correction;
-  uint8_t _direction;
-  uint8_t _pwm;
   uint8_t _minPWM;
+  uint8_t _pwm;
+  uint8_t _direction;
   void _writeDirection();
-  uint8_t _applyCorrection(uint8_t pwm) const;
 public:
-  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, float correction, uint8_t minPWM);
+  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, uint8_t minPWM);
   void init(uint32_t freq, uint8_t res);
   void stop();
+  void normal(uint8_t pwm);
+  void reverse(uint8_t pwm);
   uint8_t getPWM() const;
   void setPWM(uint8_t pwm);
   void setSignedPWM(int16_t pwm);
-  void normal(uint8_t pwm);
-  void reverse(uint8_t pwm);
   void setDirection(uint8_t dir);
+  void setMinPWM(uint8_t pwm);
 };
 #endif

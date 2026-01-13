@@ -1,10 +1,8 @@
 #include "Motor.h"
 
-Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, 
-                    uint8_t pwmChannel, float correction, uint8_t minPWM)
+Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, uint8_t minPWM)
                 : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _correction(correction), 
-                    _direction(MOTOR_DIR_NONE), _pwm(0), _minPWM(minPWM) {}
+                    _pwmChannel(pwmChannel), _minPWM(minPWM), _pwm(0), _direction(MOTOR_DIR_NONE) {}
 
 void Motor::_writeDirection() {
     switch (_direction) {
@@ -23,11 +21,6 @@ void Motor::_writeDirection() {
     }
 }
 
-uint8_t Motor::_applyCorrection(uint8_t pwm) const {
-    int16_t res = (int16_t)round(pwm * _correction);
-    return (uint8_t)constrain(res, _minPWM, MOTOR_MAX_PWM);
-}
-
 void Motor::init(uint32_t freq, uint8_t res) {
     pinMode(_inNormPin, OUTPUT);
     pinMode(_inRevPin, OUTPUT);
@@ -36,8 +29,7 @@ void Motor::init(uint32_t freq, uint8_t res) {
     _pwm = 0;
     ledcWrite(_pwmChannel, 0);
     _direction = MOTOR_DIR_NONE;
-    digitalWrite(_inNormPin, LOW);
-    digitalWrite(_inRevPin, LOW);
+    _writeDirection();
 }
 
 void Motor::stop() {
@@ -45,11 +37,21 @@ void Motor::stop() {
     setDirection(MOTOR_DIR_NONE);
 }
 
+void Motor::normal(uint8_t pwm) {
+    setPWM(pwm);
+    setDirection(MOTOR_DIR_NORMAL);
+}
+
+void Motor::reverse(uint8_t pwm) {
+    setPWM(pwm);
+    setDirection(MOTOR_DIR_REVERSE);
+}
+
 uint8_t Motor::getPWM() const { return _pwm; }
 
 void Motor::setPWM(uint8_t pwm) {
-    if (pwm != 0)
-        pwm = _applyCorrection(pwm);
+    if (pwm > 0)
+        pwm = (uint8_t)constrain(pwm, _minPWM, MOTOR_MAX_PWM);
     if (pwm == _pwm)
         return;
     _pwm = pwm;
@@ -68,19 +70,11 @@ void Motor::setSignedPWM(int16_t pwm) {
     stop();
 }
 
-void Motor::normal(uint8_t pwm) {
-    setPWM(pwm);
-    setDirection(MOTOR_DIR_NORMAL);
-}
-
-void Motor::reverse(uint8_t pwm) {
-    setPWM(pwm);
-    setDirection(MOTOR_DIR_REVERSE);
-}
-
 void Motor::setDirection(uint8_t dir) {
     if(dir == _direction)
         return;
     _direction = dir;
     _writeDirection();
 }
+
+void Motor::setMinPWM(uint8_t pwm) { _minPWM = pwm; }
