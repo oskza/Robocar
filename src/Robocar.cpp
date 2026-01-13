@@ -25,7 +25,7 @@ void Robocar::init(uint32_t freq, uint8_t res, uint32_t statusIntervalMs,
     IPAddress subnet(SUBNET_1, SUBNET_2, SUBNET_3, SUBNET_4);
     IPAddress primaryDNS(PRIMARY_DNS_1, PRIMARY_DNS_2, PRIMARY_DNS_3, PRIMARY_DNS_4);
     IPAddress secondaryDNS(SECONDARY_DNS_1, SECONDARY_DNS_2, SECONDARY_DNS_3, SECONDARY_DNS_4);
-    if (!_wifiController.init(localIP, gateway, subnet, primaryDNS, secondaryDNS, wifiIntervalMs)
+    if (!_wifiController.init(HOSTNAME, localIP, gateway, subnet, primaryDNS, secondaryDNS, wifiIntervalMs)
             || _wifiController.connect(WIFI_SSID, WIFI_PASSWORD) != WL_CONNECTED) {/*...*/}
 
     _wsController.init(_server, _handleCommandStatic, wsIntervalMs);

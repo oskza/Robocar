@@ -2,10 +2,11 @@
 
 WifiController::WifiController(Timer *timer) : _timer(timer) {}
 
-bool WifiController::init(IPAddress localIP, IPAddress gateway, IPAddress subnet, 
+bool WifiController::init(const char *hostname, IPAddress localIP, IPAddress gateway, IPAddress subnet, 
                         IPAddress primaryDNS, IPAddress secondaryDNS, uint32_t msInterval) {
     WiFi.mode(WIFI_STA);
     _timer->setTimeout(msInterval);
+    WiFi.setHostname(hostname);
     return WiFi.config(localIP, gateway, subnet, primaryDNS, secondaryDNS);
 }
 

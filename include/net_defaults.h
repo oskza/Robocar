@@ -1,6 +1,8 @@
 #ifndef NET_DEFAULTS_H
 #define NET_DEFAULTS_H
 
+#define HOSTNAME        "robocar"
+
 #define LOCAL_IP_1      192
 #define LOCAL_IP_2      168
 #define LOCAL_IP_3      1
