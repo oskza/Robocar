@@ -31,8 +31,15 @@ AsyncWebServer server(SERVER_PORT);
 Robocar device(driveController, wifiController, wsController, joysticController, deviceTimer, server);
 
 void setup() {
-    // Serial.begin(MONITOR_SPEED);
+    Serial.begin(MONITOR_SPEED);
+
     device.init(MOTOR_PWM_FREQ, MOTOR_PWM_RES, STATUS_REPORT_INTERVAL_MS, WIFI_INTERVAL_MS, WEBSOCKET_INTERVAL_MS, JOYSTIC_INTERVAL_MS);
 }
 
-void loop() { device.tick(); }
+void loop() { 
+    // device.tick();
+
+    driveController.tick();
+    delay(1000);
+
+}

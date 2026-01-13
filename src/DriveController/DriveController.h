@@ -9,11 +9,6 @@
 #define DRIVE_MODE_MANUAL         0 
 #define DRIVE_MODE_AUTO           1
 
-#define AUTO_DRIVE_STATE_IDLE     0
-#define AUTO_DRIVE_STATE_TIME     1
-#define AUTO_DRIVE_STATE_DISTANCE 2
-#define AUTO_DRIVE_STATE_ROTATION 3
-
 class DriveController {
 private:
     Motor &_motorRight;
@@ -24,12 +19,9 @@ private:
     Timer &_timer;
     StopWatch &_stopwatch;
     uint8_t _mode;
-    uint8_t _autoState;
     uint8_t _slots;
     double _circumference;
     uint32_t _targetTicks;
-    double _startHeading;
-    double _targetHeading;
     static DriveController *_instance;
     static void IRAM_ATTR _onRightEncoder();
     static void IRAM_ATTR _onLeftEncoder();
@@ -42,17 +34,16 @@ public:
     bool tick();
     void stop();
     void driveDifferential(int16_t velocity, int16_t turn);
-    void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, bool up, bool down, bool right, bool left);
+    void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, 
+                                bool up, bool down, bool right, bool left);
     void driveFor(int16_t velocity, int16_t turn, uint32_t ms);
     void driveDistance(int16_t velocity, double meters);
-    void rotate(int16_t turn, double angle);
     double getDistanceTicks() const;
     double getDistanceMeters() const;
     uint32_t getDurationMs() const;
     float getHeading() const;
     uint8_t getRightPWM() const;
     uint8_t getLeftPWM() const;
-    const char* getAutoState() const;
     const char* getMode() const;
     void setMode(const char *mode);
     void setModeAuto();

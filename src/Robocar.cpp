@@ -99,11 +99,6 @@ void Robocar::handleAutoDrive(JsonObject &payload) {
         _driveController.driveDistance(velocity, meters);
         return;
     }
-    if (strcmp(navigation, "rotation") == 0) {
-        int16_t turn = payload["turn"] | 0;
-        double degree = payload["rotation"] | 0.00f;
-        _driveController.rotate(turn, degree);
-    }
 }
 
 void Robocar::handleManualDrive(JsonObject &payload) {
@@ -148,7 +143,6 @@ void Robocar::getHeapMetrics(JsonObject &target) const {
 void Robocar::getDriveStatus(JsonObject &target) const {
     bool driving = _driveController.isDriving();
     target["mode"] = _driveController.getMode();
-    target["autoState"] = _driveController.getAutoState();
     target["heading"] = _driveController.getHeading();
     target["driving"] = driving;
     if (driving) {
