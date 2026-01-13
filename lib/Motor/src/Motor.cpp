@@ -25,11 +25,7 @@ void Motor::_writeDirection() {
 
 uint8_t Motor::_applyCorrection(uint8_t pwm) const {
     int16_t res = (int16_t)round(pwm * _correction);
-    return (res > MOTOR_MAX_PWM)
-            ? MOTOR_MAX_PWM
-            : (res < _minPWM)
-                ? _minPWM
-                : (uint8_t)res;
+    return (uint8_t)constrain(res, _minPWM, MOTOR_MAX_PWM);
 }
 
 void Motor::init(uint32_t freq, uint8_t res) {
