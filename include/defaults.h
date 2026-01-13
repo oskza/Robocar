@@ -8,12 +8,12 @@
 #define MOTOR_L_PWM_CHANNEL         1
 
 #define MOTOR_R_PWM_PIN             25
-#define MOTOR_R_FWD_PIN             18
-#define MOTOR_R_BCK_PIN             19
+#define MOTOR_R_NORM_PIN            18
+#define MOTOR_R_REV_PIN             19
 
 #define MOTOR_L_PWM_PIN             26
-#define MOTOR_L_FWD_PIN             27
-#define MOTOR_L_BCK_PIN             14
+#define MOTOR_L_NORM_PIN            27
+#define MOTOR_L_REV_PIN             14
 
 #define ENCODER_R_PIN               32
 #define ENCODER_L_PIN               33
