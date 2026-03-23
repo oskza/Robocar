@@ -5,6 +5,7 @@
 #include "controllers/NetworkController.h"
 #include "controllers/WebSocketController.h"
 #include "storage/DeviceStorage.h"
+#include <LEDIndicator.h>
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED           115200
@@ -26,6 +27,17 @@
 
 #define JOYSTIC_VERT_PIN        34
 #define JOYSTIC_HORZ_PIN        35
+
+#define LED_R_PIN               2
+#define LED_G_PIN               4
+#define LED_B_PIN               16
+
+#define LED_R_CHANNEL           2
+#define LED_G_CHANNEL           3
+#define LED_B_CHANNEL           4
+
+#define LED_FREQ                5000
+#define LED_RES                 8
 
 #define SERVER_PORT             80
 #define WEBSOCKET_PATH          "/ws"
@@ -58,6 +70,8 @@ AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
 AnalogJoysticStorage joysticStorage;
 Timer joysticTimer;
 AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
+
+LEDIndicator indic(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
 
 DeviceStorage deviceStorage;
 Timer deviceTimer;
@@ -187,12 +201,13 @@ void setup() {
     joysticController.init();
 
     server.begin();
+
+    indic.init(LED_FREQ, LED_RES);
+
     deviceTimer.setTimeout(deviceStorage.loadReportIntervalMs());
     deviceTimer.start();
 
-    // joysticController.enable();
-    // driveController.setModeAuto();
-    // driveController.driveFor(180, 0, 3000);
+    indic.waiting();
 }
 
 void loop(void) {
