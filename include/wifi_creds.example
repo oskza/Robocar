@@ -1,7 +1,0 @@
-#ifndef WIFI_CREDS_H
-#define WIFI_CREDS_H
-
-#define WIFI_SSID       "wifi_ssid"
-#define WIFI_PASSWORD   "secret"
-
-#endif

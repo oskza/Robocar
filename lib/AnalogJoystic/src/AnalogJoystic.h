@@ -11,14 +11,16 @@ private:
   uint8_t _horzPin;
   uint16_t _vertCenter;
   uint16_t _horzCenter;
+  uint16_t _deadzone;
 public:
   AnalogJoystic(uint8_t vertPin, uint8_t horzPin);
   void calibrateVerticalCenter();
   void calibrateHorizontalCenter();
-  void calibrateCenter();
-  uint16_t readVertical() const;
-  uint16_t readHorizontal() const;
+  uint16_t readVerticalRaw() const;
+  uint16_t readHorizontalRaw() const;
   uint16_t getVerticalCenter() const;
   uint16_t getHorizontalCenter() const;
+  uint16_t getDeadzone() const;
+  void setDeadzone(uint16_t deadzone);
 };
 #endif

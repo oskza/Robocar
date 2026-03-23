@@ -1,41 +1,218 @@
 #include <Arduino.h>
-#include <defaults.h>
-#include "Robocar.h"
+#include "controllers/AnalogJoysticController.h"
+#include "controllers/CompassController.h"
+#include "controllers/DriveController.h"
+#include "controllers/NetworkController.h"
+#include "controllers/WebSocketController.h"
+#include "storage/DeviceStorage.h"
 
 #ifndef MONITOR_SPEED
-#define MONITOR_SPEED 115200
+#define MONITOR_SPEED           115200
 #endif
 
-Timer driveTimer;
-StopWatch driveStopwatch;
-CompassBMM150 compass;
+#define MOTOR_R_PWM_CHANNEL     0
+#define MOTOR_L_PWM_CHANNEL     1
+
+#define MOTOR_R_PWM_PIN         25
+#define MOTOR_R_NORM_PIN        19
+#define MOTOR_R_REV_PIN         18
+
+#define MOTOR_L_PWM_PIN         26
+#define MOTOR_L_NORM_PIN        14
+#define MOTOR_L_REV_PIN         27
+
+#define ENCODER_R_PIN           32
+#define ENCODER_L_PIN           33
+
+#define JOYSTIC_VERT_PIN        34
+#define JOYSTIC_HORZ_PIN        35
+
+#define SERVER_PORT             80
+#define WEBSOCKET_PATH          "/ws"
+
+Motor motorRight(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL);
+Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL);
 Encoder encoderRight(ENCODER_R_PIN);
 Encoder encoderLeft(ENCODER_L_PIN);
-Motor motorRight(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL, MOTOR_MIN_PWM);
-Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL, MOTOR_MIN_PWM);
-DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft, compass, driveTimer, driveStopwatch, ENCODER_SLOTS, WHEEL_DIAMETER);
+DriveStorage driveStorage;
+Timer driveTimer;
+StopWatch driveStopwatch;
+DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft, 
+                                    driveStorage, driveTimer, driveStopwatch);
 
-Timer wifiTimer;
-WifiController wifiController(&wifiTimer);
+DFRobot_BMM150_I2C compass(&Wire, I2C_ADDRESS_4);
+CompassController compassController(compass);
 
-Timer wsTimer;
+NetworkStorage networkStorage;
+Timer networkTimer;
+NetworkController networkController(networkStorage, networkTimer);
+
 AsyncWebSocket ws(WEBSOCKET_PATH);
-WebSocketController wsController(ws, wsTimer, WEBSOCKET_MAX_CLIENTS);
+WebSocketStorage wsStorage;
+Timer wsTimer;
+WebSocketController wsController(ws, wsStorage, wsTimer);
 
-Timer joysticTimer;
-AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
-AnalogJoysticController joysticController(joystic, joysticTimer, JOYSTIC_DEADZONE);
-
-Timer deviceTimer;
 AsyncWebServer server(SERVER_PORT);
-Robocar device(driveController, wifiController, wsController, joysticController, deviceTimer, server);
+
+AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
+AnalogJoysticStorage joysticStorage;
+Timer joysticTimer;
+AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
+
+DeviceStorage deviceStorage;
+Timer deviceTimer;
+
+void handleAutoDrive(JsonObject &payload) {
+    const char *navigation = payload["navigation"] | "";
+    if (!navigation)
+        return;
+    if (strcmp(navigation, "duration") == 0) {
+        int16_t velocity = payload["velocity"] | 0;
+        int16_t turn = payload["turn"] | 0;
+        uint32_t ms = payload["duration"] | 0;
+        driveController.driveFor(velocity, turn, ms);
+        return;
+    }
+    if (strcmp(navigation, "distance") == 0) {
+        int16_t velocity = payload["velocity"] | 0;
+        double meters = payload["distance"] | 0.00f;
+        driveController.driveDistance(velocity, meters);
+        return;
+    }
+}
+
+void handleManualDrive(JsonObject &payload) {
+    int16_t velocity = payload["velocity"] | 0;
+    int16_t turn = payload["turn"] | 0;
+    const char *control = payload["control"] | "";
+    if (!control)
+        return;
+    if (strcmp(control, "joystic") == 0) {
+        driveController.driveDifferential(velocity, turn);
+        return;
+    }
+    if (strcmp(control, "keyboard") == 0) {
+        bool up = payload["up"] | false;
+        bool down = payload["down"] | false;
+        bool right = payload["right"] | false;
+        bool left = payload["left"] | false;
+        driveController.driveDiscreteArcade(velocity, turn, up, down, right, left);
+    }
+}
+
+void handleCommand(JsonDocument &doc) {
+    const char *cmd = doc["cmd"] | "";
+    if (!cmd) 
+        return;
+    if (strcmp(cmd, "set-mode") == 0) {
+        const char *mode = doc["payload"] | "";
+        driveController.setMode(mode);
+        return;
+    }
+    if (strcmp(cmd, "stop") == 0) {
+        driveController.stop();
+        return;
+    }
+    if (strcmp(cmd, "drive") == 0) {
+        JsonObject payload = doc["payload"];
+        if (!payload) 
+            return;
+        if(driveController.isModeManual()) {
+            handleManualDrive(payload);
+            return;
+        }
+        handleAutoDrive(payload);
+    }
+}
+
+void getHeapMetrics(JsonObject &target) {
+    target["free"] = ESP.getFreeHeap();
+    target["total"] = ESP.getHeapSize();
+    target["maxAlloc"] = ESP.getMaxAllocHeap();
+}
+
+/** TODO: add remaining meters/ms/degree */
+void getDriveStatus(JsonObject &target) {
+    bool driving = driveController.isDriving();
+    target["mode"] = driveController.getMode();
+    target["driving"] = driving;
+    if (driving) {
+        target["pwmRight"] = driveController.getRightPWM();
+        target["pwmLeft"] = driveController.getLeftPWM();
+        target["distance"] = driveController.getDistanceMeters();
+        target["duration"] = driveController.getDurationMs();
+    }
+}
+
+void getNetworkStatus(JsonObject &target) {
+    bool connected = networkController.isConnected();
+    target["connected"] = connected;
+    if (connected)
+        target["rssi"] = networkController.getRSSI();
+}
+
+void createStatus(JsonDocument &doc) {
+    doc["type"] = "status";
+    JsonObject payload = doc["payload"].to<JsonObject>();
+    payload["uptime"] = millis();
+    payload["clients"] = wsController.getClientsCount();
+    payload["heading"] = compassController.getHeading();
+    JsonObject heap = payload["heap"].to<JsonObject>();
+    getHeapMetrics(heap);
+    JsonObject drive = payload["drive"].to<JsonObject>();
+    getDriveStatus(drive);
+    JsonObject network = payload["network"].to<JsonObject>();
+    getNetworkStatus(network);
+}
+
+void updateReportIntervalMs(uint32_t ms) {
+    if (deviceTimer.getTimeout() == ms)
+        return;
+    deviceTimer.setTimeout(ms);
+    deviceStorage.saveReportIntervalMs(ms);
+}
+
+void resetConfig() {
+    deviceStorage.reset();
+    updateReportIntervalMs(DeviceDefaults::reportIntervalMs);
+}
 
 void setup() {
     // Serial.begin(MONITOR_SPEED);
-    device.init(MOTOR_PWM_FREQ, MOTOR_PWM_RES, STATUS_REPORT_INTERVAL_MS,
-                WIFI_INTERVAL_MS, WEBSOCKET_INTERVAL_MS, JOYSTIC_INTERVAL_MS);
+    deviceStorage.begin();
+    driveController.init();
+    if (!compassController.init()) {/*...*/}
+    if (!networkController.init() || networkController.connect() != WL_CONNECTED) {/*...*/}
+    wsController.init(server, handleCommand);
+    joysticController.init();
+
+    server.begin();
+    deviceTimer.setTimeout(deviceStorage.loadReportIntervalMs());
+    deviceTimer.start();
+
+    // joysticController.enable();
+    // driveController.setModeAuto();
+    // driveController.driveFor(180, 0, 3000);
 }
 
-void loop() { 
-    device.tick();
+void loop(void) {
+    int16_t vert, horz;
+    if(joysticController.tick(vert, horz)
+            && (vert != 0 || horz != 0 || driveController.isDriving()))
+        driveController.driveDifferential(vert, horz);
+    else
+        driveController.tick();
+
+    if (networkController.tick()) {/*...*/}
+
+    wsController.tick();
+
+    if (deviceTimer.tick()) {
+        if (wsController.hasClients()) {
+            StaticJsonDocument<512> status;
+            createStatus(status);
+            wsController.sendAll(status);
+        }
+        deviceTimer.refresh();
+    }
 }

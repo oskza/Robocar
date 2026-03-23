@@ -2,11 +2,9 @@
 
 WebSocketController* WebSocketController::_instance = nullptr;
 
-WebSocketController::WebSocketController(AsyncWebSocket &ws, Timer &timer, uint8_t maxClients) 
-                                        : WebSocketController(ws, timer, nullptr, maxClients) {}
-
-WebSocketController::WebSocketController(AsyncWebSocket &ws, Timer &timer, CommandCallback onCmd, uint8_t maxClients)
-                                        : _ws(ws), _timer(timer), _onCmd(onCmd), _maxClients(maxClients) { _instance = this; }
+WebSocketController::WebSocketController(AsyncWebSocket &ws, WebSocketStorage &storage, Timer &timer)
+                                        : _ws(ws), _storage(storage), _timer(timer), 
+                                            _onCmd(nullptr), _maxClients(1) { _instance = this; }
 
 
 void WebSocketController::_handleConnect(AsyncWebSocketClient *client) {
@@ -71,16 +69,14 @@ void WebSocketController::_onEventStatic(AsyncWebSocket *server, AsyncWebSocketC
         _instance->_onEvent(server, client, type, arg, data, len);
 }
 
-void WebSocketController::init(AsyncWebServer &server, uint32_t msInterval) {
+void WebSocketController::init(AsyncWebServer &server, CommandCallback cb) {
+    _storage.begin();
     _ws.onEvent(_onEventStatic);
     server.addHandler(&_ws).addMiddleware(_middlewareStatic);
-    _timer.setTimeout(msInterval);
-    _timer.start();
-}
-
-void WebSocketController::init(AsyncWebServer &server, CommandCallback cb, uint32_t msInterval) {
-    WebSocketController::init(server, msInterval);
     setCommandCallback(cb);
+    _maxClients = _storage.loadMaxClients();
+    _timer.setTimeout(_storage.loadIntervalMs());
+    _timer.start();
 }
 
 void WebSocketController::tick() {
@@ -101,3 +97,30 @@ size_t WebSocketController::getClientsCount() const { return _ws.count(); }
 bool WebSocketController::hasClients() const { return getClientsCount() > 0; }
 
 void WebSocketController::setCommandCallback(CommandCallback cb) { _onCmd = cb; }
+
+void WebSocketController::getConfig(WebSocketConfig &target) const { _storage.loadConfig(target); }
+
+void WebSocketController::updateConfig(WebSocketConfig &cfg) {
+    updateMaxClients(cfg.maxClients);
+    updateIntervalMs(cfg.intervalMs);
+}
+
+void WebSocketController::resetConfig() {
+    _storage.reset();
+    updateMaxClients(WebSocketDefaults::maxClients);
+    updateIntervalMs(WebSocketDefaults::intervalMs);
+}
+
+void WebSocketController::updateMaxClients(uint8_t clients) {
+    if (_maxClients == clients)
+        return;
+    _maxClients = clients;
+    _storage.saveMaxClients(clients);
+}
+
+void WebSocketController::updateIntervalMs(uint32_t ms) {
+    if (_timer.getTimeout() == ms)
+        return;
+    _timer.setTimeout(ms);
+    _storage.saveIntervalMs(ms);
+}

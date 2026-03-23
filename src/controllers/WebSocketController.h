@@ -4,12 +4,14 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <Timer.h>
+#include "storage/WebSocketStorage.h"
 
 typedef void (*CommandCallback)(JsonDocument &doc);
 
 class WebSocketController {
 private:
     AsyncWebSocket &_ws;
+    WebSocketStorage &_storage;
     Timer &_timer;
     CommandCallback _onCmd;
     uint8_t _maxClients;
@@ -23,14 +25,17 @@ private:
                                 AwsEventType type, void *arg, uint8_t *data, size_t len);
     static WebSocketController *_instance;
 public:
-    WebSocketController(AsyncWebSocket &ws, Timer &timer, uint8_t maxClients);
-    WebSocketController(AsyncWebSocket &ws, Timer &timer, CommandCallback onCmd, uint8_t maxClients);
-    void init(AsyncWebServer &server, uint32_t msInterval);
-    void init(AsyncWebServer &server, CommandCallback cb, uint32_t msInterval);
+    WebSocketController(AsyncWebSocket &ws, WebSocketStorage &storage, Timer &timer);
+    void init(AsyncWebServer &server, CommandCallback cb);
     void tick();
     void sendAll(JsonDocument &doc);
     size_t getClientsCount() const;
     bool hasClients() const;
     void setCommandCallback(CommandCallback cb);
+    void getConfig(WebSocketConfig &target) const;
+    void updateConfig(WebSocketConfig &cfg);
+    void resetConfig();
+    void updateMaxClients(uint8_t clients);
+    void updateIntervalMs(uint32_t ms);
 };
 #endif

@@ -1,8 +1,8 @@
 #include "Motor.h"
 
-Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, uint8_t minPWM)
+Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel)
                 : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _minPWM(minPWM), _pwm(0), _direction(MOTOR_DIR_NONE) {}
+                    _pwmChannel(pwmChannel), _minPWM(1), _pwm(0), _direction(MOTOR_DIR_NONE) {}
 
 void Motor::_writeDirection() {
     switch (_direction) {
@@ -21,11 +21,12 @@ void Motor::_writeDirection() {
     }
 }
 
-void Motor::init(uint32_t freq, uint8_t res) {
+void Motor::init(uint32_t freq, uint8_t res, uint8_t minPWM) {
     pinMode(_inNormPin, OUTPUT);
     pinMode(_inRevPin, OUTPUT);
     ledcSetup(_pwmChannel, freq, res);
     ledcAttachPin(_pwmPin, _pwmChannel);
+    _minPWM = minPWM;
     _pwm = 0;
     ledcWrite(_pwmChannel, 0);
     _direction = MOTOR_DIR_NONE;
@@ -76,5 +77,7 @@ void Motor::setDirection(uint8_t dir) {
     _direction = dir;
     _writeDirection();
 }
+
+uint8_t Motor::getMinPWM() const { return _minPWM; }
 
 void Motor::setMinPWM(uint8_t pwm) { _minPWM = pwm; }

@@ -2,12 +2,12 @@
 #define DRIVE_CONTROLLER_H
 #include <Motor.h>
 #include <Encoder.h>
-#include <CompassBMM150.h>
 #include <Timer.h>
 #include <StopWatch.h>
+#include "storage/DriveStorage.h"
 
-#define DRIVE_MODE_MANUAL         0 
-#define DRIVE_MODE_AUTO           1
+#define DRIVE_MODE_MANUAL   0 
+#define DRIVE_MODE_AUTO     1
 
 class DriveController {
 private:
@@ -15,11 +15,11 @@ private:
     Motor &_motorLeft;
     Encoder &_encoderRight;
     Encoder &_encoderLeft;
-    CompassBMM150 &_compass;
+    DriveStorage &_storage;
     Timer &_timer;
     StopWatch &_stopwatch;
     uint8_t _mode;
-    uint8_t _slots;
+    DriveConfig _config;
     double _circumference;
     uint32_t _targetTicks;
     static DriveController *_instance;
@@ -28,9 +28,8 @@ private:
 public:
     DriveController(Motor &motorRight, Motor &motorLeft, 
                         Encoder &encoderRight, Encoder &encoderLeft, 
-                        CompassBMM150 &compass, Timer &timer, StopWatch &stopwatch, 
-                        uint8_t slots, double diameter);
-    void init(uint32_t freq, uint8_t res);
+                        DriveStorage &storage, Timer &timer, StopWatch &stopwatch);
+    void init();
     bool tick();
     void stop();
     void driveDifferential(int16_t velocity, int16_t turn);
@@ -41,7 +40,6 @@ public:
     double getDistanceTicks() const;
     double getDistanceMeters() const;
     uint32_t getDurationMs() const;
-    float getHeading() const;
     uint8_t getRightPWM() const;
     uint8_t getLeftPWM() const;
     const char* getMode() const;
@@ -51,6 +49,15 @@ public:
     bool isModeAuto() const;
     bool isModeManual() const;
     bool isDriving() const;
+    void getConfig(DriveConfig &target) const;
+    void updateConfig(DriveConfig &cfg);
+    void resetConfig();
+    void updateFrequency(uint32_t freq);
+    void updateResolution(uint8_t res);
+    void updateWheelDiameter(double diameter);
+    void updateEncoderSlots(uint8_t slots);
+    void updateMotorRightMinPWM(uint8_t pwm);
+    void updateMotorLeftMinPWM(uint8_t pwm);
     static inline double wheelCircumference(double diameter) { return diameter * PI; }
     static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots) { 
         return (uint32_t)round(meters / circumference * slots); 

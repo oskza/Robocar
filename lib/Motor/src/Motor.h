@@ -19,8 +19,8 @@ private:
   uint8_t _direction;
   void _writeDirection();
 public:
-  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel, uint8_t minPWM);
-  void init(uint32_t freq, uint8_t res);
+  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel);
+  void init(uint32_t freq, uint8_t res, uint8_t minPWM);
   void stop();
   void normal(uint8_t pwm);
   void reverse(uint8_t pwm);
@@ -28,6 +28,7 @@ public:
   void setPWM(uint8_t pwm);
   void setSignedPWM(int16_t pwm);
   void setDirection(uint8_t dir);
+  uint8_t getMinPWM() const;
   void setMinPWM(uint8_t pwm);
 };
 #endif
