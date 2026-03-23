@@ -6,6 +6,7 @@
 #include "controllers/WebSocketController.h"
 #include "storage/DeviceStorage.h"
 #include <LEDIndicator.h>
+#include <BtnPush.h>
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED           115200
@@ -38,6 +39,9 @@
 
 #define LED_FREQ                5000
 #define LED_RES                 8
+
+#define BTN_PIN                 17
+#define BTN_DEBOUNCE_MS         50
 
 #define SERVER_PORT             80
 #define WEBSOCKET_PATH          "/ws"
@@ -72,6 +76,9 @@ Timer joysticTimer;
 AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
 
 LEDIndicator indic(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
+
+Timer btnTimer;
+BtnPush btn(btnTimer, BTN_PIN);
 
 DeviceStorage deviceStorage;
 Timer deviceTimer;
@@ -192,7 +199,7 @@ void resetConfig() {
 }
 
 void setup() {
-    // Serial.begin(MONITOR_SPEED);
+    Serial.begin(MONITOR_SPEED);
     deviceStorage.begin();
     driveController.init();
     if (!compassController.init()) {/*...*/}
@@ -203,6 +210,8 @@ void setup() {
     server.begin();
 
     indic.init(LED_FREQ, LED_RES);
+
+    btn.init(BTN_DEBOUNCE_MS);
 
     deviceTimer.setTimeout(deviceStorage.loadReportIntervalMs());
     deviceTimer.start();
@@ -221,6 +230,8 @@ void loop(void) {
     if (networkController.tick()) {/*...*/}
 
     wsController.tick();
+
+    btn.tick();
 
     if (deviceTimer.tick()) {
         if (wsController.hasClients()) {
