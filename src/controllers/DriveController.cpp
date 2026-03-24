@@ -32,11 +32,8 @@ void DriveController::init() {
 bool DriveController::tick() {
     if (isModeManual() || !isDriving())
         return false;
-    if (_timer.isRunning() && _timer.tick()) {
-        stop();
-        return true;
-    }
-    if (_targetTicks > 0 && getDistanceTicks() >= _targetTicks) {
+    if ((_timer.isRunning() && _timer.tick())
+            || (_targetTicks > 0 && getDistanceTicks() >= _targetTicks)) {
         stop();
         return true;
     }

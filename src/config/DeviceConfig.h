@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 struct DeviceConfig {
-    uint32_t reportIntervalMs;
+    uint32_t statusReportIntervalMs;
+    uint8_t indicatorIntensity;
 };
 #endif

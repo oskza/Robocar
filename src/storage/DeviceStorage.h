@@ -12,7 +12,9 @@ public:
     void reset();
     void loadConfig(DeviceConfig &target);
     void saveConfig(const DeviceConfig &cfg);
-    uint32_t loadReportIntervalMs();
-    void saveReportIntervalMs(uint32_t ms);
+    uint32_t loadStatusReportIntervalMs();
+    void saveStatusReportIntervalMs(uint32_t ms);
+    uint8_t loadIndicatorIntensity();
+    void saveIndicatorIntensity(uint8_t intensity);
 };
 #endif

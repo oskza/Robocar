@@ -5,8 +5,8 @@
 #include "controllers/NetworkController.h"
 #include "controllers/WebSocketController.h"
 #include "storage/DeviceStorage.h"
-#include <LEDIndicator.h>
-#include <BtnPush.h>
+#include <RGBIndicator.h>
+#include <PushBtn.h>
 #include <INA226.h>
 
 #ifndef MONITOR_SPEED
@@ -30,23 +30,22 @@
 #define JOYSTIC_VERT_PIN        34
 #define JOYSTIC_HORZ_PIN        35
 
-#define LED_R_PIN               2
-#define LED_G_PIN               4
-#define LED_B_PIN               16
+#define INDIC_R_CHANNEL         2
+#define INDIC_G_CHANNEL         3
+#define INDIC_B_CHANNEL         4
 
-#define LED_R_CHANNEL           2
-#define LED_G_CHANNEL           3
-#define LED_B_CHANNEL           4
+#define INDIC_R_PIN             2
+#define INDIC_G_PIN             4
+#define INDIC_B_PIN             16
 
-#define LED_FREQ                5000
-#define LED_RES                 8
+#define INDIC_FREQ              5000
+#define INDIC_RES               8
 
-#define BTN_PIN                 17
-#define BTN_DEBOUNCE_MS         50
+#define BTN_OPTIONS_PIN         17
 
 #define INA_I2C_ADDRESS         0x40
 #define INA_MAX_CURRENT         0.8
-#define INA_SHUNT               0.1
+#define INA_SHUNT_OHM           0.1
 
 #define SERVER_PORT             80
 #define WEBSOCKET_PATH          "/ws"
@@ -80,15 +79,57 @@ AnalogJoysticStorage joysticStorage;
 Timer joysticTimer;
 AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
 
-LEDIndicator indic(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
-
-Timer btnTimer;
-BtnPush btn(btnTimer, BTN_PIN);
+Timer btnOptionsTimer;
+PushBtn btnOptions(btnOptionsTimer, BTN_OPTIONS_PIN);
 
 INA226 ina(INA_I2C_ADDRESS);
 
+RGBIndicator indic(INDIC_R_PIN, INDIC_G_PIN, INDIC_B_PIN, 
+                    INDIC_R_CHANNEL, INDIC_G_CHANNEL, INDIC_B_CHANNEL);
+
 DeviceStorage deviceStorage;
-Timer deviceTimer;
+Timer statusReportTimer;
+
+void getHeapMetrics(JsonObject &target) {
+    target["free"] = ESP.getFreeHeap();
+    target["total"] = ESP.getHeapSize();
+    target["maxAlloc"] = ESP.getMaxAllocHeap();
+}
+
+/** TODO: add remaining meters/ms/degree */
+void getDriveStatus(JsonObject &target) {
+    bool driving = driveController.isDriving();
+    target["mode"] = driveController.getMode();
+    target["driving"] = driving;
+    if (driving) {
+        target["pwmRight"] = driveController.getRightPWM();
+        target["pwmLeft"] = driveController.getLeftPWM();
+        target["distance"] = driveController.getDistanceMeters();
+        target["duration"] = driveController.getDurationMs();
+    }
+}
+
+void getNetworkStatus(JsonObject &target) {
+    bool connected = networkController.isConnected();
+    target["connected"] = connected;
+    if (connected)
+        target["rssi"] = networkController.getRSSI();
+}
+
+void createStatus(JsonDocument &doc) {
+    doc["type"] = "status";
+    JsonObject payload = doc["payload"].to<JsonObject>();
+    payload["uptime"] = millis();
+    payload["voltage"] = ina.getBusVoltage();
+    payload["clients"] = wsController.getClientsCount();
+    payload["heading"] = compassController.getHeading();
+    JsonObject heap = payload["heap"].to<JsonObject>();
+    getHeapMetrics(heap);
+    JsonObject drive = payload["drive"].to<JsonObject>();
+    getDriveStatus(drive);
+    JsonObject network = payload["network"].to<JsonObject>();
+    getNetworkStatus(network);
+}
 
 void handleAutoDrive(JsonObject &payload) {
     const char *navigation = payload["navigation"] | "";
@@ -153,81 +194,34 @@ void handleCommand(JsonDocument &doc) {
     }
 }
 
-void getHeapMetrics(JsonObject &target) {
-    target["free"] = ESP.getFreeHeap();
-    target["total"] = ESP.getHeapSize();
-    target["maxAlloc"] = ESP.getMaxAllocHeap();
-}
-
-/** TODO: add remaining meters/ms/degree */
-void getDriveStatus(JsonObject &target) {
-    bool driving = driveController.isDriving();
-    target["mode"] = driveController.getMode();
-    target["driving"] = driving;
-    if (driving) {
-        target["pwmRight"] = driveController.getRightPWM();
-        target["pwmLeft"] = driveController.getLeftPWM();
-        target["distance"] = driveController.getDistanceMeters();
-        target["duration"] = driveController.getDurationMs();
-    }
-}
-
-void getNetworkStatus(JsonObject &target) {
-    bool connected = networkController.isConnected();
-    target["connected"] = connected;
-    if (connected)
-        target["rssi"] = networkController.getRSSI();
-}
-
-void createStatus(JsonDocument &doc) {
-    doc["type"] = "status";
-    JsonObject payload = doc["payload"].to<JsonObject>();
-    payload["uptime"] = millis();
-    payload["clients"] = wsController.getClientsCount();
-    payload["heading"] = compassController.getHeading();
-    payload["voltage"] = ina.getBusVoltage();
-    JsonObject heap = payload["heap"].to<JsonObject>();
-    getHeapMetrics(heap);
-    JsonObject drive = payload["drive"].to<JsonObject>();
-    getDriveStatus(drive);
-    JsonObject network = payload["network"].to<JsonObject>();
-    getNetworkStatus(network);
-}
-
-void updateReportIntervalMs(uint32_t ms) {
-    if (deviceTimer.getTimeout() == ms)
-        return;
-    deviceTimer.setTimeout(ms);
-    deviceStorage.saveReportIntervalMs(ms);
-}
-
-void resetConfig() {
-    deviceStorage.reset();
-    updateReportIntervalMs(DeviceDefaults::reportIntervalMs);
-}
-
 void setup() {
-    Serial.begin(MONITOR_SPEED);
-    deviceStorage.begin();
+    // Serial.begin(MONITOR_SPEED);
+
+    Wire.begin();
+    if (!ina.begin() 
+            || !ina.setAverage(INA226_16_SAMPLES)
+            || ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT_OHM) != 0) {/*...*/}
+
     driveController.init();
+
     if (!compassController.init()) {/*...*/}
-    if (!networkController.init() || networkController.connect() != WL_CONNECTED) {/*...*/}
+
+    joysticController.init(); //TODO
+
+    btnOptions.init();
+
+    if (!networkController.init() 
+            || networkController.connect() != WL_CONNECTED) {/*...*/}
+
     wsController.init(server, handleCommand);
-    joysticController.init();
 
     server.begin();
 
-    indic.init(LED_FREQ, LED_RES);
+    deviceStorage.begin();
+    indic.init(INDIC_FREQ, INDIC_RES, deviceStorage.loadIndicatorIntensity());
 
-    btn.init(BTN_DEBOUNCE_MS);
-
-    Wire.begin();
-    if (!ina.begin()) {/*...*/}
-    ina.setAverage(INA226_16_SAMPLES);
-    ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT);
-
-    deviceTimer.setTimeout(deviceStorage.loadReportIntervalMs());
-    deviceTimer.start();
+    statusReportTimer.setTimeout(deviceStorage.loadStatusReportIntervalMs());
+    statusReportTimer.start();
 
     indic.waiting();
 }
@@ -244,14 +238,14 @@ void loop(void) {
 
     wsController.tick();
 
-    btn.tick();
+    btnOptions.tick();
 
-    if (deviceTimer.tick()) {
+    if (statusReportTimer.tick()) {
+        statusReportTimer.refresh();
         if (wsController.hasClients()) {
             StaticJsonDocument<512> status;
             createStatus(status);
             wsController.sendAll(status);
         }
-        deviceTimer.refresh();
     }
 }
