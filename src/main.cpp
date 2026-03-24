@@ -7,6 +7,7 @@
 #include "storage/DeviceStorage.h"
 #include <LEDIndicator.h>
 #include <BtnPush.h>
+#include <INA226.h>
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED           115200
@@ -42,6 +43,10 @@
 
 #define BTN_PIN                 17
 #define BTN_DEBOUNCE_MS         50
+
+#define INA_I2C_ADDRESS         0x40
+#define INA_MAX_CURRENT         0.8
+#define INA_SHUNT               0.1
 
 #define SERVER_PORT             80
 #define WEBSOCKET_PATH          "/ws"
@@ -79,6 +84,8 @@ LEDIndicator indic(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL
 
 Timer btnTimer;
 BtnPush btn(btnTimer, BTN_PIN);
+
+INA226 ina(INA_I2C_ADDRESS);
 
 DeviceStorage deviceStorage;
 Timer deviceTimer;
@@ -178,6 +185,7 @@ void createStatus(JsonDocument &doc) {
     payload["uptime"] = millis();
     payload["clients"] = wsController.getClientsCount();
     payload["heading"] = compassController.getHeading();
+    payload["voltage"] = ina.getBusVoltage();
     JsonObject heap = payload["heap"].to<JsonObject>();
     getHeapMetrics(heap);
     JsonObject drive = payload["drive"].to<JsonObject>();
@@ -212,6 +220,11 @@ void setup() {
     indic.init(LED_FREQ, LED_RES);
 
     btn.init(BTN_DEBOUNCE_MS);
+
+    Wire.begin();
+    if (!ina.begin()) {/*...*/}
+    ina.setAverage(INA226_16_SAMPLES);
+    ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT);
 
     deviceTimer.setTimeout(deviceStorage.loadReportIntervalMs());
     deviceTimer.start();
