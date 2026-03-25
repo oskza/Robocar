@@ -5,7 +5,7 @@ CompassController::CompassController(DFRobot_BMM150_I2C &compass)
                                             _error(COMPASS_ERROR_CODE_NONE) {}
 
 bool CompassController::init() {
-    if (_isReady && !_error)
+    if (isReady() && !hasError())
         return true;
     _error = _compass.begin();
     if(_error) {

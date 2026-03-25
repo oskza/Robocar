@@ -1,5 +1,5 @@
-#ifndef COMPASS_CONTROLLER
-#define COMPASS_CONTROLLER
+#ifndef COMPASS_CONTROLLER_H
+#define COMPASS_CONTROLLER_H
 #include <DFRobot_BMM150.h>
 
 // values @ DFRobot_BMM150
