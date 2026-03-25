@@ -195,27 +195,34 @@ void handleCommand(JsonDocument &doc) {
 }
 
 void setup() {
-    // Serial.begin(MONITOR_SPEED);
+    Serial.begin(MONITOR_SPEED);
 
     Wire.begin();
     if (!ina.begin() 
             || !ina.setAverage(INA226_16_SAMPLES)
-            || ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT_OHM) != 0) {/*...*/}
+            || ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT_OHM) != 0) {
+        Serial.print("INA Init Error");
+    }
 
     driveController.init();
 
-    if (!compassController.init()) {/*...*/}
+    if (!compassController.init()) {
+        Serial.print("BMM150 Init Error: ");
+        Serial.print(compassController.getError());
+    }
 
-    joysticController.init(); //TODO
+    /** TODO: init joystic when connected */
+    // joysticController.init();
 
     btnOptions.init();
 
-    if (!networkController.init() 
-            || networkController.connect() != WL_CONNECTED) {/*...*/}
-
-    wsController.init(server, handleCommand);
-
-    server.begin();
+    if (networkController.init()) {
+        networkController.connect() != WL_CONNECTED;
+        wsController.init(server, handleCommand);
+        server.begin();
+    } else {
+        Serial.print("Wifi Init Error");
+    }
 
     deviceStorage.begin();
     indic.init(INDIC_FREQ, INDIC_RES, deviceStorage.loadIndicatorIntensity());
