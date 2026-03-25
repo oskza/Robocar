@@ -2,10 +2,10 @@
 #include "controllers/AnalogJoysticController.h"
 #include "controllers/CompassController.h"
 #include "controllers/DriveController.h"
+#include "controllers/IndicatorController.h"
 #include "controllers/NetworkController.h"
 #include "controllers/WebSocketController.h"
 #include "storage/DeviceStorage.h"
-#include <RGBIndicator.h>
 #include <PushBtn.h>
 #include <INA226.h>
 
@@ -15,6 +15,10 @@
 
 #define MOTOR_R_PWM_CHANNEL     0
 #define MOTOR_L_PWM_CHANNEL     1
+
+#define LED_R_CHANNEL           2
+#define LED_G_CHANNEL           3
+#define LED_B_CHANNEL           4
 
 #define MOTOR_R_PWM_PIN         25
 #define MOTOR_R_NORM_PIN        19
@@ -27,21 +31,14 @@
 #define ENCODER_R_PIN           32
 #define ENCODER_L_PIN           33
 
-#define JOYSTIC_VERT_PIN        34
-#define JOYSTIC_HORZ_PIN        35
-
-#define INDIC_R_CHANNEL         2
-#define INDIC_G_CHANNEL         3
-#define INDIC_B_CHANNEL         4
-
-#define INDIC_R_PIN             2
-#define INDIC_G_PIN             4
-#define INDIC_B_PIN             16
-
-#define INDIC_FREQ              5000
-#define INDIC_RES               8
+#define LED_R_PIN               2
+#define LED_G_PIN               4
+#define LED_B_PIN               16
 
 #define BTN_OPTIONS_PIN         17
+
+#define JOYSTIC_VERT_PIN        34
+#define JOYSTIC_HORZ_PIN        35
 
 #define INA_I2C_ADDRESS         0x40
 #define INA_MAX_CURRENT         0.8
@@ -84,8 +81,9 @@ PushBtn btnOptions(btnOptionsTimer, BTN_OPTIONS_PIN);
 
 INA226 ina(INA_I2C_ADDRESS);
 
-RGBIndicator indic(INDIC_R_PIN, INDIC_G_PIN, INDIC_B_PIN, 
-                    INDIC_R_CHANNEL, INDIC_G_CHANNEL, INDIC_B_CHANNEL);
+RGBLED led(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
+IndicatorStorage indicStorage;
+IndicatorController indicController(led, indicStorage);
 
 DeviceStorage deviceStorage;
 Timer statusReportTimer;
@@ -224,13 +222,14 @@ void setup() {
         Serial.print("Wifi Init Error");
     }
 
+    indicController.init();
+
     deviceStorage.begin();
-    indic.init(INDIC_FREQ, INDIC_RES, deviceStorage.loadIndicatorIntensity());
 
     statusReportTimer.setTimeout(deviceStorage.loadStatusReportIntervalMs());
     statusReportTimer.start();
 
-    indic.waiting();
+    indicController.waiting();
 }
 
 void loop(void) {

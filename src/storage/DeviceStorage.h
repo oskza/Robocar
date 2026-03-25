@@ -14,7 +14,5 @@ public:
     void saveConfig(const DeviceConfig &cfg);
     uint32_t loadStatusReportIntervalMs();
     void saveStatusReportIntervalMs(uint32_t ms);
-    uint8_t loadIndicatorIntensity();
-    void saveIndicatorIntensity(uint8_t intensity);
 };
 #endif

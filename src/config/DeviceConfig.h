@@ -4,6 +4,5 @@
 
 struct DeviceConfig {
     uint32_t statusReportIntervalMs;
-    uint8_t indicatorIntensity;
 };
 #endif
