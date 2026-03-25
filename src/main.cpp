@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "nvs_flash.h"
 #include "controllers/DriveController.h"
 #include "controllers/PowerController.h"
 #include "controllers/CompassController.h"
@@ -10,42 +11,43 @@
 #include <PushBtn.h>
 
 #ifndef MONITOR_SPEED
-#define MONITOR_SPEED           115200
+#define MONITOR_SPEED                   115200
 #endif
 
-#define MOTOR_R_PWM_CHANNEL     0
-#define MOTOR_L_PWM_CHANNEL     1
+#define MOTOR_R_PWM_CHANNEL             0
+#define MOTOR_L_PWM_CHANNEL             1
 
-#define LED_R_CHANNEL           2
-#define LED_G_CHANNEL           3
-#define LED_B_CHANNEL           4
+#define LED_R_CHANNEL                   2
+#define LED_G_CHANNEL                   3
+#define LED_B_CHANNEL                   4
 
-#define MOTOR_R_PWM_PIN         25
-#define MOTOR_R_NORM_PIN        19
-#define MOTOR_R_REV_PIN         18
+#define MOTOR_R_PWM_PIN                 25
+#define MOTOR_R_NORM_PIN                19
+#define MOTOR_R_REV_PIN                 18
 
-#define MOTOR_L_PWM_PIN         26
-#define MOTOR_L_NORM_PIN        14
-#define MOTOR_L_REV_PIN         27
+#define MOTOR_L_PWM_PIN                 26
+#define MOTOR_L_NORM_PIN                14
+#define MOTOR_L_REV_PIN                 27
 
-#define ENCODER_R_PIN           32
-#define ENCODER_L_PIN           33
+#define ENCODER_R_PIN                   32
+#define ENCODER_L_PIN                   33
 
-#define LED_R_PIN               2
-#define LED_G_PIN               4
-#define LED_B_PIN               16
+#define LED_R_PIN                       2
+#define LED_G_PIN                       4
+#define LED_B_PIN                       16
 
-#define BTN_OPTIONS_PIN         17
+#define JOYSTIC_VERT_PIN                34
+#define JOYSTIC_HORZ_PIN                35
 
-#define JOYSTIC_VERT_PIN        34
-#define JOYSTIC_HORZ_PIN        35
+#define BTN_ACTION_PIN                  17
+#define BTN_ACTION_LONG_PRESS_TIMEOUT   5000
 
-#define INA_I2C_ADDRESS         0x40
-#define INA_MAX_CURRENT         0.8
-#define INA_SHUNT_OHM           0.1
+#define INA_I2C_ADDRESS                 0x40
+#define INA_MAX_CURRENT                 0.8
+#define INA_SHUNT_OHM                   0.1
 
-#define SERVER_PORT             80
-#define WEBSOCKET_PATH          "/ws"
+#define SERVER_PORT                     80
+#define WEBSOCKET_PATH                  "/ws"
 
 Motor motorRight(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL);
 Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL);
@@ -70,8 +72,7 @@ RGBLED led(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_
 IndicatorStorage indicStorage;
 IndicatorController indicController(led, indicStorage);
 
-Timer btnOptionsTimer;
-PushBtn btnOptions(btnOptionsTimer, BTN_OPTIONS_PIN);
+PushBtn btnAction(BTN_ACTION_PIN);
 
 AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
 Timer joysticTimer;
@@ -196,20 +197,20 @@ void handleCommand(JsonDocument &doc) {
     }
 }
 
+void factoryReset() {
+    nvs_flash_erase();
+    nvs_flash_init();
+    ESP.restart();
+}
+
 void setup() {
     Serial.begin(MONITOR_SPEED);
 
-    if (!powerController.init(INA_MAX_CURRENT, INA_SHUNT_OHM)) {
-        Serial.print("INA Init Error"); Serial.print(powerController.getError());
-    }
+    if (!powerController.init(INA_MAX_CURRENT, INA_SHUNT_OHM)) { Serial.print("INA Init Error"); Serial.print(powerController.getError()); }
 
     driveController.init();
 
-    if (!compassController.init()) {
-        Serial.print("BMM150 Init Error: "); Serial.print(compassController.getError());
-    }
-
-    btnOptions.init();
+    if (!compassController.init()) { Serial.print("BMM150 Init Error: "); Serial.print(compassController.getError()); }
 
     /** TODO: init joystic when connected */
     // joysticController.init();
@@ -221,6 +222,10 @@ void setup() {
     } else {
         Serial.print("Wifi Init Error");
     }
+
+    btnAction.init();
+    btnAction.onLongPress(factoryReset);
+    btnAction.setLongPressTimeout(BTN_ACTION_LONG_PRESS_TIMEOUT);
 
     deviceStorage.begin();
     statusReportTimer.setTimeout(deviceStorage.loadStatusReportIntervalMs());
@@ -242,7 +247,7 @@ void loop(void) {
 
     wsController.tick();
 
-    btnOptions.tick();
+    btnAction.tick();
 
     if (statusReportTimer.tick()) {
         statusReportTimer.refresh();
