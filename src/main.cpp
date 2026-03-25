@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#include "controllers/AnalogJoysticController.h"
-#include "controllers/CompassController.h"
 #include "controllers/DriveController.h"
+#include "controllers/PowerController.h"
+#include "controllers/CompassController.h"
 #include "controllers/IndicatorController.h"
+#include "controllers/AnalogJoysticController.h"
 #include "controllers/NetworkController.h"
 #include "controllers/WebSocketController.h"
 #include "storage/DeviceStorage.h"
 #include <PushBtn.h>
-#include <INA226.h>
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED           115200
@@ -49,41 +49,45 @@
 
 Motor motorRight(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL);
 Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL);
+
 Encoder encoderRight(ENCODER_R_PIN);
 Encoder encoderLeft(ENCODER_L_PIN);
-DriveStorage driveStorage;
+
 Timer driveTimer;
 StopWatch driveStopwatch;
+
+DriveStorage driveStorage;
 DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft, 
                                     driveStorage, driveTimer, driveStopwatch);
+
+INA226 ina(INA_I2C_ADDRESS);
+PowerController powerController(ina);
 
 DFRobot_BMM150_I2C compass(&Wire, I2C_ADDRESS_4);
 CompassController compassController(compass);
 
-NetworkStorage networkStorage;
-Timer networkTimer;
-NetworkController networkController(networkStorage, networkTimer);
-
-AsyncWebSocket ws(WEBSOCKET_PATH);
-WebSocketStorage wsStorage;
-Timer wsTimer;
-WebSocketController wsController(ws, wsStorage, wsTimer);
-
-AsyncWebServer server(SERVER_PORT);
-
-AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
-AnalogJoysticStorage joysticStorage;
-Timer joysticTimer;
-AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
+RGBLED led(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
+IndicatorStorage indicStorage;
+IndicatorController indicController(led, indicStorage);
 
 Timer btnOptionsTimer;
 PushBtn btnOptions(btnOptionsTimer, BTN_OPTIONS_PIN);
 
-INA226 ina(INA_I2C_ADDRESS);
+AnalogJoystic joystic(JOYSTIC_VERT_PIN, JOYSTIC_HORZ_PIN);
+Timer joysticTimer;
+AnalogJoysticStorage joysticStorage;
+AnalogJoysticController joysticController(joystic, joysticStorage, joysticTimer);
 
-RGBLED led(LED_R_PIN, LED_G_PIN, LED_B_PIN, LED_R_CHANNEL, LED_G_CHANNEL, LED_B_CHANNEL);
-IndicatorStorage indicStorage;
-IndicatorController indicController(led, indicStorage);
+Timer networkTimer;
+NetworkStorage networkStorage;
+NetworkController networkController(networkStorage, networkTimer);
+
+AsyncWebSocket ws(WEBSOCKET_PATH);
+Timer wsTimer;
+WebSocketStorage wsStorage;
+WebSocketController wsController(ws, wsStorage, wsTimer);
+
+AsyncWebServer server(SERVER_PORT);
 
 DeviceStorage deviceStorage;
 Timer statusReportTimer;
@@ -118,7 +122,7 @@ void createStatus(JsonDocument &doc) {
     doc["type"] = "status";
     JsonObject payload = doc["payload"].to<JsonObject>();
     payload["uptime"] = millis();
-    payload["voltage"] = ina.getBusVoltage();
+    payload["voltage"] = powerController.getVoltage();
     payload["clients"] = wsController.getClientsCount();
     payload["heading"] = compassController.getHeading();
     JsonObject heap = payload["heap"].to<JsonObject>();
@@ -195,24 +199,20 @@ void handleCommand(JsonDocument &doc) {
 void setup() {
     Serial.begin(MONITOR_SPEED);
 
-    Wire.begin();
-    if (!ina.begin() 
-            || !ina.setAverage(INA226_16_SAMPLES)
-            || ina.setMaxCurrentShunt(INA_MAX_CURRENT, INA_SHUNT_OHM) != 0) {
-        Serial.print("INA Init Error");
+    if (!powerController.init(INA_MAX_CURRENT, INA_SHUNT_OHM)) {
+        Serial.print("INA Init Error"); Serial.print(powerController.getError());
     }
 
     driveController.init();
 
     if (!compassController.init()) {
-        Serial.print("BMM150 Init Error: ");
-        Serial.print(compassController.getError());
+        Serial.print("BMM150 Init Error: "); Serial.print(compassController.getError());
     }
+
+    btnOptions.init();
 
     /** TODO: init joystic when connected */
     // joysticController.init();
-
-    btnOptions.init();
 
     if (networkController.init()) {
         networkController.connect() != WL_CONNECTED;
@@ -222,13 +222,11 @@ void setup() {
         Serial.print("Wifi Init Error");
     }
 
-    indicController.init();
-
     deviceStorage.begin();
-
     statusReportTimer.setTimeout(deviceStorage.loadStatusReportIntervalMs());
     statusReportTimer.start();
 
+    indicController.init();
     indicController.waiting();
 }
 
