@@ -1,5 +1,6 @@
 #ifndef DRIVE_CONTROLLER_H
 #define DRIVE_CONTROLLER_H
+#include <ArduinoJson.h>
 #include <Motor.h>
 #include <Encoder.h>
 #include <Timer.h>
@@ -15,11 +16,11 @@ private:
     Motor &_motorLeft;
     Encoder &_encoderRight;
     Encoder &_encoderLeft;
-    DriveStorage &_storage;
     Timer &_timer;
     StopWatch &_stopwatch;
-    uint8_t _mode;
+    DriveStorage &_storage;
     DriveConfig _config;
+    uint8_t _mode;
     double _circumference;
     uint32_t _targetTicks;
     static DriveController *_instance;
@@ -28,37 +29,39 @@ private:
 public:
     DriveController(Motor &motorRight, Motor &motorLeft, 
                         Encoder &encoderRight, Encoder &encoderLeft, 
-                        DriveStorage &storage, Timer &timer, StopWatch &stopwatch);
-    void init();
-    bool tick();
+                        Timer &timer, StopWatch &stopwatch, DriveStorage &storage);
+    static const char* modeToString(uint8_t mode);
+    void init(uint8_t mode = DRIVE_MODE_MANUAL);
     void stop();
+    bool tick();
     void driveDifferential(int16_t velocity, int16_t turn);
     void driveDiscreteArcade(uint8_t velocityPWM, uint8_t turnPWM, 
                                 bool up, bool down, bool right, bool left);
     void driveFor(int16_t velocity, int16_t turn, uint32_t ms);
     void driveDistance(int16_t velocity, double meters);
-    double getDistanceTicks() const;
-    double getDistanceMeters() const;
-    uint32_t getDurationMs() const;
-    uint8_t getRightPWM() const;
-    uint8_t getLeftPWM() const;
-    const char* getMode() const;
     void setMode(const char *mode);
     void setModeAuto();
     void setModeManual();
     bool isModeAuto() const;
     bool isModeManual() const;
     bool isDriving() const;
+    uint32_t getDistanceTicks() const;
+    double getDistanceMeters() const;
+    uint32_t getDurationMs() const;
+    void getStatus(JsonObject &target) const;
     void getConfig(DriveConfig &target) const;
     void updateConfig(DriveConfig &cfg);
     void resetConfig();
     void updateFrequency(uint32_t freq);
     void updateResolution(uint8_t res);
     void updateWheelDiameter(double diameter);
+    void updateCircumferenceCorrection(double correction);
     void updateEncoderSlots(uint8_t slots);
     void updateMotorRightMinPWM(uint8_t pwm);
     void updateMotorLeftMinPWM(uint8_t pwm);
-    static inline double wheelCircumference(double diameter) { return diameter * PI; }
+    static inline double wheelCircumference(double diameter, double correction = 1.00f) { 
+        return diameter * PI * correction; 
+    }
     static inline uint32_t metersToTicks(double meters, double circumference, uint8_t slots) { 
         return (uint32_t)round(meters / circumference * slots); 
     }

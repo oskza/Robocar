@@ -15,6 +15,7 @@ public:
     void saveFrequency(uint32_t freq);
     void saveResolution(uint8_t res);
     void saveWheelDiameter(double diameter);
+    void saveCircCorrection(double correction);
     void saveEncoderSlots(uint8_t slots);
     void saveMotorRightMinPWM(uint8_t pwm);
     void saveMotorLeftMinPWM(uint8_t pwm);

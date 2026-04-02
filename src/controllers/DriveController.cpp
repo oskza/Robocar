@@ -4,18 +4,26 @@ DriveController *DriveController::_instance = nullptr;
 
 DriveController::DriveController(Motor &motorRight, Motor &motorLeft, 
                                     Encoder &encoderRight, Encoder &encoderLeft, 
-                                    DriveStorage &storage, Timer &timer, StopWatch &stopwatch) 
+                                    Timer &timer, StopWatch &stopwatch, DriveStorage &storage) 
                                 : _motorRight(motorRight), _motorLeft(motorLeft), 
                                     _encoderRight(encoderRight), _encoderLeft(encoderLeft), 
-                                    _storage(storage), _timer(timer), _stopwatch(stopwatch), 
-                                    _mode(DRIVE_MODE_MANUAL), _config{}, _circumference(0), 
+                                    _timer(timer), _stopwatch(stopwatch), _storage(storage), 
+                                    _config{}, _mode(DRIVE_MODE_MANUAL), _circumference(0), 
                                     _targetTicks(0) { _instance = this; }
 
 void IRAM_ATTR DriveController::_onRightEncoder() { if (_instance) _instance->_encoderRight.tick(); }
 
 void IRAM_ATTR DriveController::_onLeftEncoder() { if (_instance) _instance->_encoderLeft.tick(); }
 
-void DriveController::init() {
+const char* DriveController::modeToString(uint8_t mode) {
+    return (mode == DRIVE_MODE_AUTO) 
+                ? "auto" 
+                : (mode == DRIVE_MODE_MANUAL)
+                    ? "manual"
+                    : "unknown";
+}
+
+void DriveController::init(uint8_t mode) {
     _storage.begin();
     _storage.loadConfig(_config);
     _motorRight.init(_config.frequency, _config.resolution, _config.motorRightMinPWM);
@@ -24,20 +32,9 @@ void DriveController::init() {
     _encoderLeft.init(_onLeftEncoder);
     _timer.reset();
     _stopwatch.stop();
-    _mode = DRIVE_MODE_MANUAL;
-    _circumference = wheelCircumference(_config.wheelDiameter);
+    _mode = (mode == DRIVE_MODE_AUTO) ? DRIVE_MODE_AUTO : DRIVE_MODE_MANUAL;
+    _circumference = wheelCircumference(_config.wheelDiameter, _config.circCorrection);
     _targetTicks = 0;
-}
-
-bool DriveController::tick() {
-    if (isModeManual() || !isDriving())
-        return false;
-    if ((_timer.isRunning() && _timer.tick())
-            || (_targetTicks > 0 && getDistanceTicks() >= _targetTicks)) {
-        stop();
-        return true;
-    }
-    return false;
 }
 
 void DriveController::stop() {
@@ -52,6 +49,16 @@ void DriveController::stop() {
         _timer.reset();
         _targetTicks = 0;
     }
+}
+
+bool DriveController::tick() {
+    if (isModeAuto() && isDriving() 
+            && (_timer.tick() 
+                || (_targetTicks > 0 && getDistanceTicks() >= _targetTicks))) {
+        stop();
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -72,10 +79,8 @@ void DriveController::driveDifferential(int16_t velocity, int16_t turn) {
         pwmRight = pwmRight * MOTOR_MAX_PWM / maxMag;
         pwmLeft  = pwmLeft  * MOTOR_MAX_PWM / maxMag;
     }
-    pwmRight = constrain(pwmRight, -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
-    pwmLeft  = constrain(pwmLeft,  -MOTOR_MAX_PWM, MOTOR_MAX_PWM);
-    _motorRight.setSignedPWM(pwmRight);
-    _motorLeft.setSignedPWM(pwmLeft);
+    _motorRight.run(pwmRight);
+    _motorLeft.run(pwmLeft);
     _stopwatch.start();
 }
 
@@ -110,23 +115,6 @@ void DriveController::driveDistance(int16_t velocity, double meters) {
     driveDifferential(velocity, 0);
 }
 
-double DriveController::getDistanceTicks() const { return (_encoderRight.getCount() + _encoderLeft.getCount()) / 2.00; }
-
-double DriveController::getDistanceMeters() const { return ticksToMeters(getDistanceTicks(), _circumference, _config.encoderSlots); }
-
-uint32_t DriveController::getDurationMs() const { return _stopwatch.lap(); }
-
-uint8_t DriveController::getRightPWM() const { return _motorRight.getPWM(); }
-
-uint8_t DriveController::getLeftPWM() const { return _motorLeft.getPWM(); }
-
-const char* DriveController::getMode() const {
-    switch (_mode) {
-        case DRIVE_MODE_AUTO:   return "auto";
-        case DRIVE_MODE_MANUAL: return "manual";
-    }
-}
-
 void DriveController::setMode(const char *mode) {
     if (!mode) 
         return;
@@ -148,7 +136,37 @@ bool DriveController::isModeManual() const { return _mode == DRIVE_MODE_MANUAL; 
 
 bool DriveController::isDriving() const { return _motorRight.getPWM() > 0 || _motorLeft.getPWM() > 0; }
 
-void DriveController::getConfig(DriveConfig &target) const { target = _config; }
+uint32_t DriveController::getDistanceTicks() const { 
+    uint32_t a = _encoderRight.getCount();
+    uint32_t b = _encoderLeft.getCount();
+    return (a >> 1) + (b >> 1) + ((a & 1) + (b & 1) + 1) / 2;
+}
+
+double DriveController::getDistanceMeters() const { return ticksToMeters(getDistanceTicks(), _circumference, _config.encoderSlots); }
+
+uint32_t DriveController::getDurationMs() const { return _stopwatch.lap(); }
+
+/** TODO: add remaining meters/ms */
+void DriveController::getStatus(JsonObject &target) const {
+    bool driving = isDriving();
+    target["mode"] = modeToString(_mode);
+    target["driving"] = driving;
+    if (driving) {
+        target["pwmRight"] = _motorRight.getPWM();
+        target["pwmLeft"] = _motorLeft.getPWM();;
+        target["distance"] = getDistanceMeters();
+        target["duration"] = getDurationMs();
+    }
+}
+
+void DriveController::getConfig(DriveConfig &target) const {
+    target.frequency = _config.frequency;
+    target.resolution = _config.resolution;
+    target.wheelDiameter = _config.wheelDiameter;
+    target.encoderSlots = _config.encoderSlots;
+    target.motorRightMinPWM = _config.motorRightMinPWM;
+    target.motorLeftMinPWM = _config.motorLeftMinPWM;
+}
 
 void DriveController::resetConfig() {
     _storage.reset(); 
@@ -188,9 +206,17 @@ void DriveController::updateResolution(uint8_t res) {
 void DriveController::updateWheelDiameter(double diameter) {
     if (fabs(_config.wheelDiameter - diameter) <= 0.001f)
         return;
-    _circumference = wheelCircumference(diameter);
+    _circumference = wheelCircumference(diameter, _config.circCorrection);
     _config.wheelDiameter = diameter;
     _storage.saveWheelDiameter(diameter);
+}
+
+void DriveController::updateCircumferenceCorrection(double correction) {
+    if (_config.circCorrection == correction)
+        return;
+    _circumference = wheelCircumference(_config.wheelDiameter, correction);
+    _config.circCorrection = correction;
+    _storage.saveCircCorrection(correction);
 }
 
 void DriveController::updateEncoderSlots(uint8_t slots) {
