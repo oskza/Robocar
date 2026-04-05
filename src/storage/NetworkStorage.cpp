@@ -1,91 +1,166 @@
 #include "NetworkStorage.h"
 
-void NetworkStorage::begin() { _prefs.begin("network_cfg", false); }
+#define PREFS_NETWORK_CFG       "net_cfg"
+#define PREFS_DHCP_KEY          "dchp"
+#define PREFS_INTERVAL_KEY      "interval"
+#define PREFS_HOSTNAME_KEY      "hostname"
+#define PREFS_LOCAL_IP_KEY      "local_ip"
+#define PREFS_GATEWAY_KEY       "gateway"
+#define PREFS_SUBNET_KEY        "subnet"
+#define PREFS_DNS_1_KEY         "dns1"
+#define PREFS_DNS_2_KEY         "dns2"
+#define PREFS_SSID_KEY          "ssid"
+#define PREFS_PASSWORD_KEY      "password"
+#define PREFS_AP_SSID_KEY       "ap_ssid"
+#define PREFS_AP_PASSWORD_KEY   "ap_password"
 
-void NetworkStorage::reset() { _prefs.clear(); }
+void NetworkStorage::begin() { _prefs.begin(PREFS_NETWORK_CFG, false); }
+
+void NetworkStorage::clear() { _prefs.clear(); }
+
+void NetworkStorage::clearConfig() {
+    _prefs.remove(PREFS_DHCP_KEY);
+    _prefs.remove(PREFS_INTERVAL_KEY);
+    _prefs.remove(PREFS_HOSTNAME_KEY);
+    _prefs.remove(PREFS_LOCAL_IP_KEY);
+    _prefs.remove(PREFS_GATEWAY_KEY);
+    _prefs.remove(PREFS_SUBNET_KEY);
+    _prefs.remove(PREFS_DNS_1_KEY);
+    _prefs.remove(PREFS_DNS_2_KEY);
+}
+
+void NetworkStorage::clearCredentials() {
+    _prefs.remove(PREFS_SSID_KEY);
+    _prefs.remove(PREFS_PASSWORD_KEY);
+}
+
+void NetworkStorage::clearAPCredentials() {
+    _prefs.remove(PREFS_AP_SSID_KEY);
+    _prefs.remove(PREFS_AP_PASSWORD_KEY);
+}
 
 void NetworkStorage::loadConfig(NetworkConfig &target) {
-    loadHostname(target.hostname, 32);
+    target.dhcp = loadDHCP();
+    target.intervalMs = loadIntervalMs();
+    loadHostname(target.hostname);
     loadLocalIP(target.localIP);
     loadGateway(target.gateway);
     loadSubnet(target.subnet);
     loadPrimaryDNS(target.primaryDNS);
     loadSecondaryDNS(target.secondaryDNS);
-    loadSSID(target.ssid, 32);
-    loadPassword(target.password, 64);
-    target.intervalMs = loadIntervalMs();
 }
 
-void NetworkStorage::saveConfig(NetworkConfig &cfg) {
+void NetworkStorage::loadCredentials(WifiCredentials &target) {
+    loadSSID(target.ssid);
+    loadPassword(target.password);
+}
+
+void NetworkStorage::loadAPCredentials(WifiCredentials &target) {
+    loadAPSSID(target.ssid);
+    loadAPPassword(target.password);
+}
+
+bool NetworkStorage::loadDHCP() { return _prefs.getBool(PREFS_DHCP_KEY, NetworkDefaults::dhcp); }
+
+uint32_t NetworkStorage::loadIntervalMs() { return _prefs.getULong(PREFS_INTERVAL_KEY, NetworkDefaults::intervalMs); }
+
+void NetworkStorage::loadHostname(char *target) {
+    if (_prefs.getString(PREFS_HOSTNAME_KEY, target, 32) == 0) {
+        strncpy(target, NetworkDefaults::hostname, 32);
+        target[31] = '\0';
+    }
+}
+
+void NetworkStorage::loadLocalIP(uint8_t *target) {
+    if (_prefs.getBytes(PREFS_LOCAL_IP_KEY, target, 4) != 4)
+        memcpy(target, NetworkDefaults::localIP, 4);
+}
+
+void NetworkStorage::loadGateway(uint8_t *target) {
+    if (_prefs.getBytes(PREFS_GATEWAY_KEY, target, 4) != 4)
+        memcpy(target, NetworkDefaults::gateway, 4);
+}
+
+void NetworkStorage::loadSubnet(uint8_t *target) {
+    if (_prefs.getBytes(PREFS_SUBNET_KEY, target, 4) != 4)
+        memcpy(target, NetworkDefaults::subnet, 4);
+}
+
+void NetworkStorage::loadPrimaryDNS(uint8_t *target) {
+    if (_prefs.getBytes(PREFS_DNS_1_KEY, target, 4) != 4)
+        memcpy(target, NetworkDefaults::primaryDNS, 4);
+}
+
+void NetworkStorage::loadSecondaryDNS(uint8_t *target) {
+    if (_prefs.getBytes(PREFS_DNS_2_KEY, target, 4) != 4)
+        memcpy(target, NetworkDefaults::secondaryDNS, 4);
+}
+
+void NetworkStorage::loadSSID(char* target) {
+    if (_prefs.getString(PREFS_SSID_KEY, target, 32) == 0)
+        target[0] = '\0';
+}
+
+void NetworkStorage::loadPassword(char* target) {
+    if (_prefs.getString(PREFS_PASSWORD_KEY, target, 64) == 0)
+        target[0] = '\0';
+}
+
+void NetworkStorage::loadAPSSID(char *target) {
+    if (_prefs.getString(PREFS_AP_SSID_KEY, target, 32) == 0) {
+        strncpy(target, NetworkDefaults::apSSID, 32);
+        target[31] = '\0';
+    }
+}
+
+void NetworkStorage::loadAPPassword(char *target) {
+    if (_prefs.getString(PREFS_AP_PASSWORD_KEY, target, 64) == 0) {
+        strncpy(target, NetworkDefaults::apPassword, 64);
+        target[63] = '\0';
+    }
+}
+
+void NetworkStorage::saveConfig(const NetworkConfig &cfg) {
+    saveDHCP(cfg.dhcp);
+    saveIntervalMs(cfg.intervalMs);
     saveHostname(cfg.hostname);
     saveLocalIP(cfg.localIP);
     saveGateway(cfg.gateway);
     saveSubnet(cfg.subnet);
     savePrimaryDNS(cfg.primaryDNS);
     saveSecondaryDNS(cfg.secondaryDNS);
-    saveSSID(cfg.ssid);
-    savePassword(cfg.password);
-    saveIntervalMs(cfg.intervalMs);
 }
 
-void NetworkStorage::loadHostname(char *target, size_t len) {
-    if (_prefs.getString("hostname", target, len) == 0) {
-        strncpy(target, NetworkDefaults::hostname, len);
-        target[len - 1] = '\0';
-    }
+void NetworkStorage::saveCredentials(const WifiCredentials &creds) {
+    saveSSID(creds.ssid);
+    savePassword(creds.password);
 }
 
-void NetworkStorage::saveHostname(const char *hostname) { _prefs.putString("hostname", hostname); }
-
-void NetworkStorage::loadSSID(char* target, size_t len) {
-    if (_prefs.getString("ssid", target, len) == 0)
-        target[0] = '\0';
+void NetworkStorage::saveAPCredentials(const WifiCredentials &creds) {
+    saveAPSSID(creds.ssid);
+    saveAPPassword(creds.password);
 }
 
-void NetworkStorage::saveSSID(const char *ssid) { _prefs.putString("ssid", ssid); }
+void NetworkStorage::saveDHCP(bool dhcp) { _prefs.putBool(PREFS_DHCP_KEY, dhcp); }
 
-void NetworkStorage::loadPassword(char* target, size_t len) {
-    if (_prefs.getString("password", target, len) == 0)
-        target[0] = '\0';
-}
+void NetworkStorage::saveIntervalMs(uint32_t ms) { _prefs.putULong(PREFS_INTERVAL_KEY, ms); }
 
-void NetworkStorage::savePassword(const char *password) { _prefs.putString("password", password); }
+void NetworkStorage::saveHostname(const char *hostname) { _prefs.putString(PREFS_HOSTNAME_KEY, hostname); }
 
-void NetworkStorage::loadLocalIP(uint8_t *target) {
-    if (_prefs.getBytes("local_ip", target, 4) != 4)
-        memcpy(target, NetworkDefaults::localIP, 4);
-}
+void NetworkStorage::saveLocalIP(const uint8_t *ip) { _prefs.putBytes(PREFS_LOCAL_IP_KEY, ip, 4); }
 
-void NetworkStorage::saveLocalIP(const uint8_t *ip) { _prefs.putBytes("local_ip", ip, 4); }
+void NetworkStorage::saveGateway(const uint8_t *gateway) { _prefs.putBytes(PREFS_GATEWAY_KEY, gateway, 4); }
 
-void NetworkStorage::loadGateway(uint8_t *target) {
-    if (_prefs.getBytes("gateway", target, 4) != 4)
-        memcpy(target, NetworkDefaults::gateway, 4);
-}
+void NetworkStorage::saveSubnet(const uint8_t *subnet) { _prefs.putBytes(PREFS_SUBNET_KEY, subnet, 4); }
 
-void NetworkStorage::saveGateway(const uint8_t *gateway) { _prefs.putBytes("gateway", gateway, 4); }
+void NetworkStorage::savePrimaryDNS(const uint8_t *dns) { _prefs.putBytes(PREFS_DNS_1_KEY, dns, 4); }
 
-void NetworkStorage::loadSubnet(uint8_t *target) {
-    if (_prefs.getBytes("subnet", target, 4) != 4)
-        memcpy(target, NetworkDefaults::subnet, 4);
-}
+void NetworkStorage::saveSecondaryDNS(const uint8_t *dns) { _prefs.putBytes(PREFS_DNS_2_KEY, dns, 4); }
 
-void NetworkStorage::saveSubnet(const uint8_t *subnet) { _prefs.putBytes("subnet", subnet, 4); }
+void NetworkStorage::saveSSID(const char *ssid) { _prefs.putString(PREFS_SSID_KEY, ssid); }
 
-void NetworkStorage::loadPrimaryDNS(uint8_t *target) {
-    if (_prefs.getBytes("dns1", target, 4) != 4)
-        memcpy(target, NetworkDefaults::primaryDNS, 4);
-}
+void NetworkStorage::savePassword(const char *password) { _prefs.putString(PREFS_PASSWORD_KEY, password); }
 
-void NetworkStorage::savePrimaryDNS(const uint8_t *dns) { _prefs.putBytes("dns1", dns, 4); }
+void NetworkStorage::saveAPSSID(const char *ssid) { _prefs.putString(PREFS_AP_SSID_KEY, ssid); }
 
-void NetworkStorage::loadSecondaryDNS(uint8_t *target) {
-    if (_prefs.getBytes("dns2", target, 4) != 4)
-        memcpy(target, NetworkDefaults::secondaryDNS, 4);
-}
-
-void NetworkStorage::saveSecondaryDNS(const uint8_t *dns) { _prefs.putBytes("dns2", dns, 4); }
-
-uint32_t NetworkStorage::loadIntervalMs() { return _prefs.getULong("interval", NetworkDefaults::intervalMs); }
-
-void NetworkStorage::saveIntervalMs(uint32_t ms) { _prefs.putULong("interval", ms); }
+void NetworkStorage::saveAPPassword(const char *password) { _prefs.putString(PREFS_AP_PASSWORD_KEY, password); }

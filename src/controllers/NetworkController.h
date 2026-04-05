@@ -4,30 +4,52 @@
 #include <Timer.h>
 #include "storage/NetworkStorage.h"
 
+struct WifiAPStatus {
+    uint8_t clients;
+};
+
+struct WifiSTAStatus {
+    bool connected;
+    int8_t rssi;
+};
+
+struct NetworkStatus {
+    char mode[6];
+    union {
+        WifiAPStatus ap;
+        WifiSTAStatus sta;
+    };
+};
+
 class NetworkController {
 private:
     NetworkStorage &_storage;
     Timer &_timer;
-    NetworkConfig _config;
+    bool _configureStation();
+    void _setDHCP(bool enable);
 public:
     NetworkController(NetworkStorage &storage, Timer &timer);
+    static void modeToString(uint8_t mode, char *target);
     bool init();
     bool tick();
     wl_status_t connect();
+    void disconnect();
     bool checkConnectivity();
+    bool enableAP();
+    void enableDHCP();
+    void disableDHCP();
     bool isConnected() const;
-    int8_t getRSSI() const;
-    void getConfig(NetworkConfig &target) const;
-    void updateConfig(NetworkConfig &cfg);
+    bool hasCredentials() const;
+    void reset();
     void resetConfig();
-    void updateHostname(const char *hostname);
-    void updateSSID(const char *ssid);
-    void updatePassword(const char *password);
-    void updateLocalIP(const uint8_t *ip);
-    void updateGateway(const uint8_t *gateway);
-    void updateSubnet(const uint8_t *subnet);
-    void updatePrimaryDNS(const uint8_t *dns);
-    void updateSecondaryDNS(const uint8_t *dns);
-    void updateIntervalMs(uint32_t ms);
+    void resetCredentials();
+    void resetAPCredentials();
+    void getStatus(NetworkStatus &target) const;
+    void getConfig(NetworkConfig &target) const;
+    void getCredentials(WifiCredentials &target) const;
+    void getAPCredentials(WifiCredentials &target) const;
+    void updateConfig(const NetworkConfig &cfg);
+    void updateCredentials(const WifiCredentials &creds);
+    void updateAPCredentials(const WifiCredentials &creds);
 };
 #endif
