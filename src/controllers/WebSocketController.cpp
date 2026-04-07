@@ -68,7 +68,7 @@ void WebSocketController::init(AsyncWebServer &server, CommandCallback cb) {
     _storage.begin();
     _ws.onEvent(_onEventStatic);
     server.addHandler(&_ws).addMiddleware(_middlewareStatic);
-    setCommandCallback(cb);
+    onCommand(cb);
     _maxClients = _storage.loadMaxClients();
     _timer.setTimeout(_storage.loadIntervalMs());
     _timer.start();
@@ -89,8 +89,8 @@ void WebSocketController::sendAll(JsonDocument &doc) {
 
 void WebSocketController::resetConfig() {
     _storage.reset();
-    updateMaxClients(WebSocketDefaults::maxClients);
-    updateIntervalMs(WebSocketDefaults::intervalMs);
+    _maxClients = WebSocketDefaults::maxClients;
+    _timer.setTimeout(WebSocketDefaults::intervalMs);
 }
 
 void WebSocketController::getStatus(WSStatus &target) const { target.clients = getClientsCount(); }
@@ -101,7 +101,7 @@ size_t WebSocketController::getClientsCount() const { return _ws.count(); }
 
 bool WebSocketController::hasClients() const { return getClientsCount() > 0; }
 
-void WebSocketController::setCommandCallback(CommandCallback cb) { _onCmd = cb; }
+void WebSocketController::onCommand(CommandCallback cb) { _onCmd = cb; }
 
 void WebSocketController::updateConfig(WebSocketConfig &cfg) {
     updateMaxClients(cfg.maxClients);

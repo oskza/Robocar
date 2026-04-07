@@ -36,7 +36,7 @@ public:
     void sendAll(JsonDocument &doc);
     size_t getClientsCount() const;
     bool hasClients() const;
-    void setCommandCallback(CommandCallback cb);
+    void onCommand(CommandCallback cb);
     void resetConfig();
     void getStatus(WSStatus &target) const;
     void getConfig(WebSocketConfig &target) const;
