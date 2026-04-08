@@ -48,10 +48,7 @@ bool NetworkController::init() {
 }
 
 bool NetworkController::tick() {
-    if (!_timer.tick())
-        return false;
-    _timer.refresh();
-    return checkConnectivity();
+    return (_timer.tick()) ? checkConnectivity() : false;
 }
 
 wl_status_t NetworkController::connect() {
@@ -146,6 +143,7 @@ void NetworkController::getAPCredentials(WifiCredentials &creds) const { _storag
 
 void NetworkController::updateConfig(const NetworkConfig &cfg) {
     _storage.saveConfig(cfg);
+    _timer.setTimeout(cfg.intervalMs);
     if (WiFi.getMode() == WIFI_STA) {
         WiFi.disconnect(true);
         connect();
