@@ -1,8 +1,6 @@
 #include <Arduino.h>
-#include "nvs_flash.h"
-#include "storage/DeviceStorage.h"
-#include "controllers/NetworkController.h"
-#include "controllers/WebSocketController.h"
+#include "SystemController.h"
+#include "CommandDispatcher.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED                   115200
@@ -11,8 +9,9 @@
 #define SERVER_PORT                     80
 #define WEBSOCKET_PATH                  "/ws"
 
-DeviceStorage deviceStorage;
+SystemStorage systemStorage;
 Timer statusReportTimer;
+SystemController systemController(systemStorage, statusReportTimer);
 
 NetworkStorage networkStorage;
 Timer networkTimer;
@@ -25,30 +24,12 @@ WebSocketController wsController(ws, wsStorage, wsTimer);
 
 AsyncWebServer server(SERVER_PORT);
 
-void factoryReset() {
-    nvs_flash_erase();
-    nvs_flash_init();
-    ESP.restart();
-}
-
-void handleCommand(JsonDocument &doc) {
-    const char *cmd = doc["cmd"] | "";
-    if (!cmd) 
-        return;
-    if (strcmp(cmd, "reset") == 0) {
-        factoryReset();
-        return;
-    }
-    if (strcmp(cmd, "restart") == 0) {
-        ESP.restart();
-        return;
-    }
-}
-
-void getHeapStatus(JsonObject &target) {
-    target["free"] = ESP.getFreeHeap();
-    target["total"] = ESP.getHeapSize();
-    target["maxAlloc"] = ESP.getMaxAllocHeap();
+void parseSystemStatus(const SystemStatus &status, JsonObject &target) {
+    target["uptime"] = status.uptime;
+    JsonObject heap = target["heap"].to<JsonObject>();
+    heap["free"] = status.heap.free;
+    heap["total"] = status.heap.total;
+    heap["maxAlloc"] = status.heap.maxAlloc;
 }
 
 void parseNetworkStatus(const NetworkStatus &status, JsonObject &target) {
@@ -71,12 +52,12 @@ void parseWSStatus(const WSStatus &status, JsonObject &target) {
 
 void createStatus(JsonDocument &doc) {
     doc["type"] = "status";
-    
     JsonObject payload = doc["payload"].to<JsonObject>();
-    payload["uptime"] = millis();
     
-    JsonObject heap = payload["heap"].to<JsonObject>();
-    getHeapStatus(heap);
+    JsonObject system = payload["system"].to<JsonObject>();
+    SystemStatus systemStatus;
+    systemController.getStatus(systemStatus);
+    parseSystemStatus(systemStatus, system);
 
     JsonObject network = payload["network"].to<JsonObject>();
     NetworkStatus netStatus;
@@ -92,31 +73,21 @@ void createStatus(JsonDocument &doc) {
 void setup() {
     // Serial.begin(MONITOR_SPEED);
 
-    deviceStorage.begin();
-    statusReportTimer.setTimeout(deviceStorage.loadStatusReportIntervalMs());
-    statusReportTimer.start();
-
+    systemController.init();
     if (networkController.init())
         networkController.connect();
     else
         networkController.enableAP();
-
     wsController.init(server, handleCommand);
-    
     server.begin();
 }
 
 void loop() {
     if (networkController.tick()) {/** TODO: ... */}
-
     wsController.tick();
-
-    if (statusReportTimer.tick()) {
-        statusReportTimer.refresh();
-        if (wsController.hasClients()) {
-            StaticJsonDocument<512> status;
-            createStatus(status);
-            wsController.sendAll(status);
-        }
+    if (systemController.tick() && wsController.hasClients()) {
+        StaticJsonDocument<512> status;
+        createStatus(status);
+        wsController.sendAll(status);
     }
 }
