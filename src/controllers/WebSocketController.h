@@ -12,7 +12,7 @@ struct WSStatus {
 
 typedef void (*CommandCallback)(JsonDocument &doc);
 
-/** TODO: remove json dependencies */
+/** TODO: remove json dependency */
 class WebSocketController {
 private:
     AsyncWebSocket &_ws;
@@ -37,7 +37,7 @@ public:
     size_t getClientsCount() const;
     bool hasClients() const;
     void onCommand(CommandCallback cb);
-    void resetConfig();
+    void reset();
     void getStatus(WSStatus &target) const;
     void getConfig(WebSocketConfig &target) const;
     void updateConfig(WebSocketConfig &cfg);

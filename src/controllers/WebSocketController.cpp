@@ -87,7 +87,7 @@ void WebSocketController::sendAll(JsonDocument &doc) {
     _ws.textAll(buffer);
 }
 
-void WebSocketController::resetConfig() {
+void WebSocketController::reset() {
     _storage.reset();
     _maxClients = WebSocketDefaults::maxClients;
     _timer.setTimeout(WebSocketDefaults::intervalMs);
