@@ -1,6 +1,5 @@
 #include <Arduino.h>
-#include <Motor.h>
-#include <Encoder.h>
+#include "drive/controller/DriveController.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED       115200
@@ -25,8 +24,18 @@ Motor motorLeft(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_
 Encoder encoderRight(ENCODER_R_PIN);
 Encoder encoderLeft(ENCODER_L_PIN);
 
+Timer driveTimer;
+StopWatch driveStopwatch;
+
+DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft, driveTimer, driveStopwatch);
+
 void setup() {
     Serial.begin(MONITOR_SPEED);
+
+    DriveConfig driveCfg;
+    driveController.init(driveCfg);
 }
 
-void loop() {}
+void loop() {
+    driveController.tick();
+}
