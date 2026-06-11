@@ -1,0 +1,31 @@
+#ifndef MOTOR_H
+#define MOTOR_H
+#include <Arduino.h>
+
+enum MotorDirection : uint8_t {
+  MOTOR_DIR_NONE, MOTOR_DIR_NORMAL, MOTOR_DIR_REVERSE
+};
+
+class Motor {
+private:
+  uint8_t _pwmPin;
+  uint8_t _inNormPin;
+  uint8_t _inRevPin;
+  uint8_t _pwmChannel;
+  uint8_t _minPWM;
+  uint8_t _pwm;
+  uint8_t _direction;
+  void _applyDirection(uint8_t dir);
+  void _applyPWM(uint8_t pwm);
+public:
+  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel);
+  static uint8_t scalePWM(uint8_t pwm, uint8_t min, uint8_t max);
+  void init(uint32_t freq, uint8_t res, uint8_t minPWM = 0);
+  void stop();
+  void run(int16_t pwm);
+  void setDirection(uint8_t dir);
+  uint8_t getPWM() const;
+  void setPWM(uint8_t pwm);
+  void setMinPWM(uint8_t pwm);
+};
+#endif
