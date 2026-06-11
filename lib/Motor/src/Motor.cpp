@@ -2,11 +2,11 @@
 
 Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel)
                 : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _minPWM(0), _pwm(0), 
+                    _pwmChannel(pwmChannel), _minPwm(0), _pwm(0), 
                     _direction(MotorDirection::MOTOR_DIR_NONE) {}
 
-uint8_t Motor::scalePWM(uint8_t pwm, uint8_t min, uint8_t max) {
-    return (pwm != 0) ? (uint8_t)(((int32_t)pwm * (max - min)) / 255 + min) : 0;
+uint8_t Motor::scalePwm(uint8_t pwm, uint8_t minVal, uint8_t maxVal) {
+    return (pwm != 0) ? (uint8_t)(((int32_t)pwm * (maxVal - minVal)) / 255 + minVal) : 0;
 }
 
 void Motor::_applyDirection(uint8_t dir) {
@@ -27,25 +27,25 @@ void Motor::_applyDirection(uint8_t dir) {
     }
 }
 
-void Motor::_applyPWM(uint8_t pwm) {
+void Motor::_applyPwm(uint8_t pwm) {
     _pwm = pwm;
     ledcWrite(_pwmChannel, pwm); 
 }
 
-void Motor::init(uint32_t freq, uint8_t res, uint8_t minPWM) {
+void Motor::init(uint32_t freq, uint8_t res, uint8_t minPwm) {
     pinMode(_inNormPin, OUTPUT);
     pinMode(_inRevPin, OUTPUT);
     ledcSetup(_pwmChannel, freq, res);
     ledcAttachPin(_pwmPin, _pwmChannel);
-    _minPWM = minPWM;
-    _applyPWM(0);
+    _minPwm = minPwm;
+    _applyPwm(0);
     _applyDirection(MotorDirection::MOTOR_DIR_NONE);
 }
 
 void Motor::stop() {
     if (_pwm == 0)
         return;
-    _applyPWM(0);
+    _applyPwm(0);
     _applyDirection(MotorDirection::MOTOR_DIR_NONE);
 }
 
@@ -56,11 +56,11 @@ void Motor::run(int16_t pwm) {
     }
     pwm = constrain(pwm, -255, 255);
     if(pwm < 0) {
-        setPWM(-pwm);
+        setPwm(-pwm);
         setDirection(MotorDirection::MOTOR_DIR_REVERSE);
         return;
     }
-    setPWM(pwm);
+    setPwm(pwm);
     setDirection(MotorDirection::MOTOR_DIR_NORMAL);
 }
 
@@ -70,14 +70,14 @@ void Motor::setDirection(uint8_t dir) {
     _applyDirection(dir);
 }
 
-uint8_t Motor::getPWM() const { return _pwm; }
+uint8_t Motor::getPwm() const { return _pwm; }
 
-void Motor::setPWM(uint8_t pwm) {
-    if (_minPWM > 0) 
-        pwm = scalePWM(pwm, _minPWM, 255);
+void Motor::setPwm(uint8_t pwm) {
+    if (_minPwm > 0) 
+        pwm = scalePwm(pwm, _minPwm, 255);
     if (pwm == _pwm)
         return;
-    _applyPWM(pwm);
+    _applyPwm(pwm);
 }
 
-void Motor::setMinPWM(uint8_t pwm) { _minPWM = pwm; }
+void Motor::setMinPwm(uint8_t pwm) { _minPwm = pwm; }
