@@ -8,7 +8,7 @@ struct DriveConfig {
     float wheelDiameter = 0.067f;
     float wheelCircumferenceFactor = 1.00f;
     uint8_t encoderSlots = 20;
-    uint8_t motorRightMinPWM = 110;
-    uint8_t motorLeftMinPWM = 110;
+    uint8_t motorRightMinPwm = 110;
+    uint8_t motorLeftMinPwm = 110;
 };
 #endif

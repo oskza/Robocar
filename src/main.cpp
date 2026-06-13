@@ -30,7 +30,7 @@ StopWatch driveStopwatch;
 DriveController driveController(motorRight, motorLeft, encoderRight, encoderLeft, driveTimer, driveStopwatch);
 
 void setup() {
-    Serial.begin(MONITOR_SPEED);
+    // Serial.begin(MONITOR_SPEED);
 
     DriveConfig driveCfg;
     driveController.init(driveCfg);

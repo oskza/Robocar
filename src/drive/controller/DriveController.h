@@ -5,6 +5,7 @@
 #include <Timer.h>
 #include <StopWatch.h>
 #include "../config/DriveConfig.h"
+#include "../config/DriveConfigPatch.h"
 
 enum class DriveMode : uint8_t { MANUAL, AUTO };
 

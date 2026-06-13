@@ -16,8 +16,8 @@ void IRAM_ATTR DriveController::_onRightEncoder() { if (_instance) _instance->_e
 void IRAM_ATTR DriveController::_onLeftEncoder() { if (_instance) _instance->_encoderLeft.tick(); }
 
 void DriveController::init(const DriveConfig &cfg, DriveMode mode) {
-    _motorRight.init(cfg.pwmFrequency, cfg.pwmResolution, cfg.motorRightMinPWM);
-    _motorLeft.init(cfg.pwmFrequency, cfg.pwmResolution, cfg.motorLeftMinPWM);
+    _motorRight.init(cfg.pwmFrequency, cfg.pwmResolution, cfg.motorRightMinPwm);
+    _motorLeft.init(cfg.pwmFrequency, cfg.pwmResolution, cfg.motorLeftMinPwm);
     _encoderRight.init(_onRightEncoder);
     _encoderLeft.init(_onLeftEncoder);
     _timer.reset();

@@ -1,16 +1,14 @@
 #include "Motor.h"
 
 Motor::Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel)
-                : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin),
-                    _pwmChannel(pwmChannel), _minPwm(0), _pwm(0), 
-                    _direction(MotorDirection::MOTOR_DIR_NONE) {}
+                : _pwmPin(pwmPin), _inNormPin(inNormPin), _inRevPin(inRevPin), _pwmChannel(pwmChannel), 
+                    _pwm(0), _minPwm(0), _direction(MotorDirection::MOTOR_DIR_NONE) {}
 
 uint8_t Motor::scalePwm(uint8_t pwm, uint8_t minVal, uint8_t maxVal) {
     return (pwm != 0) ? (uint8_t)(((int32_t)pwm * (maxVal - minVal)) / 255 + minVal) : 0;
 }
 
-void Motor::_applyDirection(uint8_t dir) {
-    _direction = dir;
+void Motor::_applyDirection(MotorDirection dir) {
     switch (dir) {
         case MotorDirection::MOTOR_DIR_NONE:
             digitalWrite(_inNormPin, LOW);
@@ -27,26 +25,22 @@ void Motor::_applyDirection(uint8_t dir) {
     }
 }
 
-void Motor::_applyPwm(uint8_t pwm) {
-    _pwm = pwm;
-    ledcWrite(_pwmChannel, pwm); 
-}
-
 void Motor::init(uint32_t freq, uint8_t res, uint8_t minPwm) {
     pinMode(_inNormPin, OUTPUT);
     pinMode(_inRevPin, OUTPUT);
+    digitalWrite(_inNormPin, LOW);
+    digitalWrite(_inRevPin, LOW);
     ledcSetup(_pwmChannel, freq, res);
     ledcAttachPin(_pwmPin, _pwmChannel);
+    ledcWrite(_pwmChannel, 0);
+    _pwm = 0;
     _minPwm = minPwm;
-    _applyPwm(0);
-    _applyDirection(MotorDirection::MOTOR_DIR_NONE);
+    _direction = MotorDirection::MOTOR_DIR_NONE;
 }
 
 void Motor::stop() {
-    if (_pwm == 0)
-        return;
-    _applyPwm(0);
-    _applyDirection(MotorDirection::MOTOR_DIR_NONE);
+    setPwm(0);
+    setDirection(MotorDirection::MOTOR_DIR_NONE);
 }
 
 void Motor::run(int16_t pwm) {
@@ -64,10 +58,22 @@ void Motor::run(int16_t pwm) {
     setDirection(MotorDirection::MOTOR_DIR_NORMAL);
 }
 
-void Motor::setDirection(uint8_t dir) {
-    if(_direction == dir)
+void Motor::normal(uint8_t pwm) {
+    if (pwm == 0) {
+        stop();
         return;
-    _applyDirection(dir);
+    }
+    setPwm(pwm);
+    setDirection(MotorDirection::MOTOR_DIR_NORMAL);
+}
+
+void Motor::reverse(uint8_t pwm) {
+    if (pwm == 0) {
+        stop();
+        return;
+    }
+    setPwm(pwm);
+    setDirection(MotorDirection::MOTOR_DIR_REVERSE);
 }
 
 uint8_t Motor::getPwm() const { return _pwm; }
@@ -75,9 +81,19 @@ uint8_t Motor::getPwm() const { return _pwm; }
 void Motor::setPwm(uint8_t pwm) {
     if (_minPwm > 0) 
         pwm = scalePwm(pwm, _minPwm, 255);
-    if (pwm == _pwm)
+    if (_pwm == pwm)
         return;
-    _applyPwm(pwm);
+    _pwm = pwm;
+    ledcWrite(_pwmChannel, pwm); 
+}
+
+MotorDirection Motor::getDirection() const { return _direction; }
+
+void Motor::setDirection(MotorDirection dir) {
+    if(_direction == dir)
+        return;
+    _direction = dir;
+    _applyDirection(dir);
 }
 
 void Motor::setMinPwm(uint8_t pwm) { _minPwm = pwm; }
