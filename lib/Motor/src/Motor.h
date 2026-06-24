@@ -2,9 +2,7 @@
 #define MOTOR_H
 #include <Arduino.h>
 
-enum MotorDirection : uint8_t {
-  MOTOR_DIR_NONE, MOTOR_DIR_NORMAL, MOTOR_DIR_REVERSE
-};
+enum MotorDirection : uint8_t { NONE, NORMAL, REVERSE };
 
 class Motor {
 private:
@@ -17,9 +15,8 @@ private:
   MotorDirection _direction;
   void _applyDirection(MotorDirection dir);
 public:
-  Motor(uint8_t pwmPin, uint8_t inNormPin, 
-          uint8_t inRevPin, uint8_t pwmChannel);
-  static uint8_t scalePwm(uint8_t pwm, uint8_t minVal, uint8_t maxVal);
+  Motor(uint8_t pwmPin, uint8_t inNormPin, uint8_t inRevPin, uint8_t pwmChannel);
+  static uint8_t scalePwm(uint8_t pwm, uint8_t minVal, uint8_t maxVal = 255);
   void init(uint32_t freq, uint8_t res, uint8_t minPwm = 0);
   void stop();
   void run(int16_t pwm);
