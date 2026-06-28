@@ -15,32 +15,54 @@
 #define MOTOR_L_REV_PIN     27
 #define MOTOR_L_PWM_CHANNEL 1
 
-#define MOTOR_PWM_FREQ      1000
-#define MOTOR_MIN_PWM       110
-#define WHEEL_ACCELERATION  5
+#define ENCODER_R_PIN       32
+#define ENCODER_L_PIN       33
+
+static constexpr uint32_t MOTOR_PWM_FREQ = 1000;
+static constexpr uint8_t MOTOR_R_MIN_PWM = 110;
+static constexpr uint8_t MOTOR_L_MIN_PWM = 110;
+
+static constexpr uint8_t WHEEL_ACCELERATION = 5;
+
+static constexpr float WHEEL_DIAMETER = 0.067f;
+static constexpr float WHEEL_CIRCUMFERENCE_FACTOR = 1.0f;
+static constexpr uint8_t ENCODER_SLOTS = 20;
+
+static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
 
 MotorDriver rightMotor(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL);
 MotorDriver leftMotor(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL);
+
+Encoder rightEncoder(ENCODER_R_PIN);
+Encoder leftEncoder(ENCODER_L_PIN);
 
 WheelOutputController rightWheel(rightMotor);
 WheelOutputController leftWheel(leftMotor);
 
 DifferentialDrive differential(rightWheel, leftWheel);
-MotionController motion(differential);
+Odometry odometry(rightEncoder, leftEncoder);
+MotionController motion(differential, odometry);
+
+void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
+
+void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 
 void setup() {
     // Serial.begin(MONITOR_SPEED);
 
-    rightMotor.begin(MOTOR_PWM_FREQ, MOTOR_MIN_PWM);
-    leftMotor.begin(MOTOR_PWM_FREQ, MOTOR_MIN_PWM);
+    rightMotor.begin(MOTOR_PWM_FREQ, MOTOR_R_MIN_PWM);
+    leftMotor.begin(MOTOR_PWM_FREQ, MOTOR_L_MIN_PWM);
+
+    rightEncoder.begin(onRightEncoder);
+    leftEncoder.begin(onLeftEncoder);
+
+    odometry.begin(wheelCircumference(WHEEL_DIAMETER, WHEEL_CIRCUMFERENCE_FACTOR), ENCODER_SLOTS);
 
     motion.begin(WHEEL_ACCELERATION);
 
-    motion.driveFor(150, 0, 3000);
+    // motion.driveDistance(150, 0.50f);
 }
 
 void loop() {
-    uint32_t now = millis();
-
-    motion.update(now);
+    // motion.update(millis());
 }
