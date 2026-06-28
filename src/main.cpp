@@ -44,7 +44,7 @@ WheelOutputController leftWheel(leftMotor);
 
 DifferentialDrive differential(rightWheel, leftWheel);
 Odometry odometry(rightEncoder, leftEncoder);
-MotionController motion(differential, odometry);
+MotionController motion(differential, odometry, compass);
 
 void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 
@@ -66,6 +66,8 @@ void setup() {
     if (!compass.begin()) { /** TODO: handle init failure */}
 
     // motion.driveDistance(150, 0.50f);
+
+    // motion.rotateTo(90.0f, 120);
 }
 
 void loop() {
