@@ -9,11 +9,10 @@ MotorDriver::MotorDriver(uint8_t pwmPin, uint8_t in1Pin, uint8_t in2Pin, uint8_t
       _output(0) {}
 
 uint8_t MotorDriver::_scalePwm(uint8_t pwm) const {
-    if (pwm == 0)
-        return 0;
-    if (_minEffectivePwm == 0)
-        return pwm;
-    return (uint8_t)(((uint16_t)pwm * (MAX_OUTPUT - _minEffectivePwm)) / MAX_OUTPUT + _minEffectivePwm);
+    return ((pwm == 0 || _minEffectivePwm == 0))
+        ? pwm
+        : (uint8_t)(((uint16_t)
+            pwm * (MAX_OUTPUT - _minEffectivePwm)) / MAX_OUTPUT + _minEffectivePwm);
 }
 
 void MotorDriver::_applyCoast() {
