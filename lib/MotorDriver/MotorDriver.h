@@ -4,8 +4,6 @@
 
 class MotorDriver {
 private:
-    static constexpr uint8_t PWM_RESOLUTION = 8;
-    static constexpr uint8_t MAX_OUTPUT = 255;
     uint8_t _pwmPin;
     uint8_t _in1Pin;
     uint8_t _in2Pin;
@@ -18,6 +16,8 @@ private:
     void _applyForward();
     void _applyReverse();
 public:
+    static constexpr uint8_t PWM_RESOLUTION = 8;
+    static constexpr uint8_t MAX_OUTPUT = 255;
     MotorDriver(uint8_t pwmPin, uint8_t in1Pin, uint8_t in2Pin, uint8_t pwmChannel);
     void begin(uint32_t pwmFrequency = 1000, uint8_t minEffectivePwm = 0);
     bool isStopped() const;
