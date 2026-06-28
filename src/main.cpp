@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Bmm150Compass.h>
 #include "domain/motion/MotionController.h"
 
 #ifndef MONITOR_SPEED
@@ -36,6 +37,8 @@ MotorDriver leftMotor(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_
 Encoder rightEncoder(ENCODER_R_PIN);
 Encoder leftEncoder(ENCODER_L_PIN);
 
+Bmm150Compass compass;
+
 WheelOutputController rightWheel(rightMotor);
 WheelOutputController leftWheel(leftMotor);
 
@@ -59,6 +62,8 @@ void setup() {
     odometry.begin(wheelCircumference(WHEEL_DIAMETER, WHEEL_CIRCUMFERENCE_FACTOR), ENCODER_SLOTS);
 
     motion.begin(WHEEL_ACCELERATION);
+
+    if (!compass.begin()) { /** TODO: handle init failure */}
 
     // motion.driveDistance(150, 0.50f);
 }
