@@ -9,16 +9,34 @@
 class MotionController {
 private:
     enum class State : uint8_t { IDLE, MANUAL, TIMED, DISTANCE, ROTATING };
+    struct TimedCommand {
+        uint32_t endTime;
+        void clear() { endTime = 0; }
+    };
+    struct DistanceCommand {
+        uint32_t targetTicks;
+        void clear() { targetTicks = 0; }
+    };
+    struct RotationCommand {
+        float targetHeadingDegrees;
+        uint8_t speed;
+        void clear() {
+            targetHeadingDegrees = 0.0f;
+            speed = 0;
+        }
+    };
     DifferentialDrive &_differential;
     Odometry &_odometry;
     Bmm150Compass &_compass;
     State _state;
-    uint32_t _endTime;
-    uint32_t _targetTicks;
-    float _targetHeadingDegrees;
-    uint8_t _rotationSpeed;
+    TimedCommand _timed;
+    DistanceCommand _distance;
+    RotationCommand _rotation;
     float _headingToleranceDegrees;
-    void _idle();
+    void _clearCommands();
+    bool _timedExpired(uint32_t nowMs) const;
+    bool _distanceReached() const;
+    void _updateRotation();
 public:
     MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass);
     void begin(uint8_t acceleration = 5, float headingToleranceDegrees = 2.0f);
