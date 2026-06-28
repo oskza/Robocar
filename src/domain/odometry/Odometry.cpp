@@ -27,3 +27,10 @@ float Odometry::getMeters() const {
     float rotations = getTicks() / (float)_encoderSlots;
     return rotations * _wheelCircumference;
 }
+
+uint32_t Odometry::metersToTicks(float meters) const {
+    if (meters <= 0.0f || _wheelCircumference <= 0.0f)
+        return 0;
+
+    return (uint32_t)round((meters / _wheelCircumference) * _encoderSlots);
+}

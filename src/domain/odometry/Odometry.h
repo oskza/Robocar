@@ -15,5 +15,6 @@ public:
     void reset();
     uint32_t getTicks() const;
     float getMeters() const;
+    uint32_t metersToTicks(float meters) const;
 };
 #endif
