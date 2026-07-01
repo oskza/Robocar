@@ -10,6 +10,10 @@ void DifferentialDrive::begin(uint8_t acceleration) {
 
 bool DifferentialDrive::isStopped() const { return _rightWheel.isStopped() && _leftWheel.isStopped(); }
 
+int16_t DifferentialDrive::getRightOutput() const { return _rightWheel.getCurrentOutput(); }
+
+int16_t DifferentialDrive::getLeftOutput() const { return _leftWheel.getCurrentOutput(); }
+
 void DifferentialDrive::drive(int16_t velocity, int16_t turn) {
     velocity = constrain(velocity, -MotorDriver::MAX_OUTPUT, MotorDriver::MAX_OUTPUT);
     turn = constrain(turn, -MotorDriver::MAX_OUTPUT, MotorDriver::MAX_OUTPUT);

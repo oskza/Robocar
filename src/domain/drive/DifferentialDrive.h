@@ -11,6 +11,8 @@ public:
     DifferentialDrive(WheelOutputController &rightWheel, WheelOutputController &leftWheel);
     void begin(uint8_t acceleration = 5);
     bool isStopped() const;
+    int16_t getRightOutput() const;
+    int16_t getLeftOutput() const;
     void drive(int16_t velocity, int16_t turn);
     void update();
     void stop();
