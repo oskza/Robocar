@@ -48,5 +48,6 @@ public:
     void update(uint32_t nowMs);
     void stop();
     void brake();
+    bool isStopped() const;
 };
 #endif

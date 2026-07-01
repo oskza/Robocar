@@ -27,12 +27,10 @@ bool MotionController::_distanceReached() const {
 void MotionController::_updateRotation() {
     float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.targetHeadingDegrees);
     if (fabsf(diff) <= _headingToleranceDegrees) {
-        stop();
+        brake();
         return;
     }
-    int16_t turn = (diff > 0.0f)
-        ? (int16_t)_rotation.speed
-        : -(int16_t)_rotation.speed;
+    int16_t turn = (diff > 0.0f) ? -(int16_t)_rotation.speed :  (int16_t)_rotation.speed;
     _differential.drive(0, turn);
 }
 
@@ -123,3 +121,5 @@ void MotionController::brake() {
     _state = State::IDLE;
     _differential.brake();
 }
+
+bool MotionController::isStopped() const { return _state == State::IDLE && _differential.isStopped(); }
