@@ -9,7 +9,7 @@ private:
     AsyncWebServer _server;
 public:
     explicit WebSocketServer(uint16_t port = 80, const char *path = "/ws");
-    bool begin();
+    void begin();
     void update();
     bool hasClients() const;
     bool broadcast(const char *message);

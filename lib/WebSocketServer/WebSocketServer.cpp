@@ -2,10 +2,9 @@
 
 WebSocketServer::WebSocketServer(uint16_t port, const char *path) : _ws(path), _server(port) {}
 
-bool WebSocketServer::begin() {
+void WebSocketServer::begin() {
     _server.addHandler(&_ws);
     _server.begin();
-    return true;
 }
 
 void WebSocketServer::update() { _ws.cleanupClients(); }
