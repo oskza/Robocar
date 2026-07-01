@@ -11,5 +11,6 @@ public:
     void update();
     bool isConnected() const;
     IPAddress getLocalIp() const;
+    int32_t getRssi() const;
 };
 #endif
