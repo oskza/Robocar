@@ -31,6 +31,12 @@ bool RobotSnapshotJsonWriter::write(const RobotSnapshot &snapshot, char *buffer,
     network["rssi"] = snapshot.network.rssi;
     network["localIp"] = snapshot.network.localIp.toString();
 
+    JsonObject power = doc["power"].to<JsonObject>();
+    power["connected"] = snapshot.power.connected;
+    power["busVoltage"] = snapshot.power.busVoltage;
+    power["currentMilliamps"] = snapshot.power.currentMilliamps;
+    power["powerMilliwatts"] = snapshot.power.powerMilliwatts;
+
     JsonObject motion = doc["motion"].to<JsonObject>();
     motion["state"] = _motionStateToString(snapshot.motion.state);
     motion["stopped"] = snapshot.motion.stopped;

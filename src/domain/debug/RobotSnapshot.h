@@ -11,6 +11,12 @@ struct RobotSnapshot {
         int32_t rssi;
         IPAddress localIp;
     } network;
+    struct {
+        bool connected;
+        float busVoltage;
+        float currentMilliamps;
+        float powerMilliwatts;
+    } power;
     MotionSnapshot motion;
     struct {
         int16_t leftOutput;

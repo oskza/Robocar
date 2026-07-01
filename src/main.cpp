@@ -1,8 +1,9 @@
 #include <Arduino.h>
-#include <Bmm150Compass.h>
 #include <WifiManager.h>
-#include <WebSocketServer.h>
 #include <PrivateConfig.h>
+#include <WebSocketServer.h>
+#include <Bmm150Compass.h>
+#include <Ina226PowerMonitor.h>
 #include "domain/motion/MotionController.h"
 #include "domain/debug/WebSocketTelemetry.h"
 
@@ -35,6 +36,10 @@
 
 #define HEADING_TOLERANCE_DEGREES   12.0f
 
+#define INA226_ADDRESS              0x40
+#define INA226_MAX_CURRENT_AMPS     0.8f
+#define INA226_SHUNT_OHMS           0.1f
+
 #define WS_PORT                     80
 #define WS_PATH                     "/ws"
 
@@ -57,6 +62,8 @@ Encoder leftEncoder(ENCODER_L_PIN);
 
 Bmm150Compass compass;
 
+Ina226PowerMonitor powerMonitor(INA226_ADDRESS);
+
 WheelOutputController rightWheel(rightMotor);
 WheelOutputController leftWheel(leftMotor);
 
@@ -64,7 +71,7 @@ DifferentialDrive differential(rightWheel, leftWheel);
 Odometry odometry(rightEncoder, leftEncoder);
 MotionController motion(differential, odometry, compass);
 
-RobotStateReader robotStateReader(wifi, motion, differential, odometry);
+RobotStateReader robotStateReader(wifi, powerMonitor, motion, differential, odometry);
 WebSocketTelemetry telemetry(robotStateReader, webSocketServer);
 
 uint32_t lastWifiUpdateMs = 0;
@@ -79,7 +86,7 @@ void setup() {
     // Serial.begin(MONITOR_SPEED);
     // delay(500);
 
-    wifi.begin(WIFI_SSID, WIFI_PASSWORD);
+    if (!wifi.begin(WIFI_SSID, WIFI_PASSWORD)) {}
 
     webSocketServer.begin();
 
@@ -91,7 +98,9 @@ void setup() {
 
     odometry.begin(wheelCircumference(WHEEL_DIAMETER, WHEEL_CIRCUMFERENCE_FACTOR), ENCODER_SLOTS);
 
-    compass.begin();
+    if (!compass.begin()) {}
+
+    if (!powerMonitor.begin(INA226_MAX_CURRENT_AMPS, INA226_SHUNT_OHMS)) {}
 
     motion.begin(WHEEL_ACCELERATION, HEADING_TOLERANCE_DEGREES);
 }
