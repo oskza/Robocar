@@ -4,6 +4,7 @@
 #include <WebSocketServer.h>
 #include <PrivateConfig.h>
 #include "domain/motion/MotionController.h"
+#include "domain/debug/WebSocketTelemetry.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED               115200
@@ -37,9 +38,9 @@
 #define WS_PORT                     80
 #define WS_PATH                     "/ws"
 
-#define WIFI_UPDATE_INTERVAL_MS     3000
+#define WIFI_UPDATE_INTERVAL_MS     5000
 #define WS_UPDATE_INTERVAL_MS       100
-#define WS_BROADCAST_INTERVAL_MS    1000
+#define WS_BROADCAST_INTERVAL_MS    3000
 #define MOTION_UPDATE_INTERVAL_MS   100
 
 static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
@@ -63,6 +64,9 @@ DifferentialDrive differential(rightWheel, leftWheel);
 Odometry odometry(rightEncoder, leftEncoder);
 MotionController motion(differential, odometry, compass);
 
+RobotStateReader robotStateReader(wifi, motion, differential, odometry);
+WebSocketTelemetry telemetry(robotStateReader, webSocketServer);
+
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
 uint32_t lastWsUpdateMs = 0;
@@ -72,8 +76,8 @@ void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 
 void setup() {
-    Serial.begin(MONITOR_SPEED);
-    delay(500);
+    // Serial.begin(MONITOR_SPEED);
+    // delay(500);
 
     wifi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -112,6 +116,6 @@ void loop() {
 
     if (now - lastWsBroadcastMs >= WS_BROADCAST_INTERVAL_MS) {
         lastWsBroadcastMs = now;
-        webSocketServer.broadcast("its alive");
+        telemetry.update(now);
     }
 }

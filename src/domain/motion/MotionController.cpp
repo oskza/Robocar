@@ -41,19 +41,19 @@ MotionState MotionController::getState() const { return _state; }
 
 MotionSnapshot MotionController::getSnapshot() const {
     MotionSnapshot snapshot;
-
     snapshot.state = _state;
     snapshot.stopped = isStopped();
-
     snapshot.currentHeadingDegrees = _compass.getHeadingDegrees();
-
-    snapshot.targetHeadingDegrees = _rotation.targetHeadingDegrees;
-
-    snapshot.headingErrorDegrees = AngleMath::differenceDegrees(
-        snapshot.targetHeadingDegrees,
-        snapshot.currentHeadingDegrees
-    );
-
+    if (_state == MotionState::ROTATING) {
+        snapshot.targetHeadingDegrees = _rotation.targetHeadingDegrees;
+        snapshot.headingErrorDegrees = AngleMath::differenceDegrees(
+            snapshot.targetHeadingDegrees,
+            snapshot.currentHeadingDegrees
+        );
+    } else {
+        snapshot.targetHeadingDegrees = 0.0f;
+        snapshot.headingErrorDegrees = 0.0f;
+    }
     return snapshot;
 }
 
