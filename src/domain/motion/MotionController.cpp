@@ -4,7 +4,7 @@ MotionController::MotionController(DifferentialDrive &differential, Odometry &od
     : _differential(differential),
       _odometry(odometry),
       _compass(compass),
-      _state(State::IDLE),
+      _state(MotionState::IDLE),
       _timed{0},
       _distance{0},
       _rotation{0.0f, 0},
@@ -16,13 +16,9 @@ void MotionController::_clearCommands() {
     _rotation.clear();
 }
 
-bool MotionController::_timedExpired(uint32_t nowMs) const {
-    return (int32_t)(nowMs - _timed.endTime) >= 0;
-}
+bool MotionController::_timedExpired(uint32_t nowMs) const { return (int32_t)(nowMs - _timed.endTime) >= 0; }
 
-bool MotionController::_distanceReached() const {
-    return _odometry.getTicks() >= _distance.targetTicks;
-}
+bool MotionController::_distanceReached() const { return _odometry.getTicks() >= _distance.targetTicks; }
 
 void MotionController::_updateRotation() {
     float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.targetHeadingDegrees);
@@ -38,12 +34,32 @@ void MotionController::begin(uint8_t acceleration, float headingToleranceDegrees
     _differential.begin(acceleration);
     _headingToleranceDegrees = headingToleranceDegrees;
     _clearCommands();
-    _state = State::IDLE;
+    _state = MotionState::IDLE;
+}
+
+MotionState MotionController::getState() const { return _state; }
+
+MotionSnapshot MotionController::getSnapshot() const {
+    MotionSnapshot snapshot;
+
+    snapshot.state = _state;
+    snapshot.stopped = isStopped();
+
+    snapshot.currentHeadingDegrees = _compass.getHeadingDegrees();
+
+    snapshot.targetHeadingDegrees = _rotation.targetHeadingDegrees;
+
+    snapshot.headingErrorDegrees = AngleMath::differenceDegrees(
+        snapshot.targetHeadingDegrees,
+        snapshot.currentHeadingDegrees
+    );
+
+    return snapshot;
 }
 
 void MotionController::drive(int16_t velocity, int16_t turn) {
     _clearCommands();
-    _state = State::MANUAL;
+    _state = MotionState::MANUAL;
     _differential.drive(velocity, turn);
 }
 
@@ -53,7 +69,7 @@ void MotionController::driveFor(int16_t velocity, int16_t turn, uint32_t duratio
         return;
     }
     _clearCommands();
-    _state = State::TIMED;
+    _state = MotionState::TIMED;
     _timed.endTime = millis() + durationMs;
     _differential.drive(velocity, turn);
 }
@@ -70,7 +86,7 @@ void MotionController::driveDistance(int16_t velocity, float meters) {
     }
     _odometry.reset();
     _clearCommands();
-    _state = State::DISTANCE;
+    _state = MotionState::DISTANCE;
     _distance.targetTicks = targetTicks;
     _differential.drive(velocity, 0);
 }
@@ -81,7 +97,7 @@ void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
         return;
     }
     _clearCommands();
-    _state = State::ROTATING;
+    _state = MotionState::ROTATING;
     _rotation.targetHeadingDegrees = AngleMath::normalizeDegrees(headingDegrees);
     _rotation.speed = constrain(speed, 1, MotorDriver::MAX_OUTPUT);
 }
@@ -92,19 +108,19 @@ void MotionController::rotateBy(float degrees, uint8_t speed) {
 
 void MotionController::update(uint32_t nowMs) {
     switch (_state) {
-        case State::TIMED:
+        case MotionState::TIMED:
             if (_timedExpired(nowMs))
                 stop();
             break;
-        case State::DISTANCE:
+        case MotionState::DISTANCE:
             if (_distanceReached())
                 stop();
             break;
-        case State::ROTATING:
+        case MotionState::ROTATING:
             _updateRotation();
             break;
-        case State::IDLE:
-        case State::MANUAL:
+        case MotionState::IDLE:
+        case MotionState::MANUAL:
             break;
     }
     _differential.update();
@@ -112,14 +128,14 @@ void MotionController::update(uint32_t nowMs) {
 
 void MotionController::stop() {
     _clearCommands();
-    _state = State::IDLE;
+    _state = MotionState::IDLE;
     _differential.stop();
 }
 
 void MotionController::brake() {
     _clearCommands();
-    _state = State::IDLE;
+    _state = MotionState::IDLE;
     _differential.brake();
 }
 
-bool MotionController::isStopped() const { return _state == State::IDLE && _differential.isStopped(); }
+bool MotionController::isStopped() const { return _state == MotionState::IDLE && _differential.isStopped(); }

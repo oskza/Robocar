@@ -5,10 +5,11 @@
 #include <Bmm150Compass.h>
 #include "../drive/DifferentialDrive.h"
 #include "../odometry/Odometry.h"
+#include "MotionState.h"
+#include "MotionSnapshot.h"
 
 class MotionController {
 private:
-    enum class State : uint8_t { IDLE, MANUAL, TIMED, DISTANCE, ROTATING };
     struct TimedCommand {
         uint32_t endTime;
         void clear() { endTime = 0; }
@@ -28,7 +29,7 @@ private:
     DifferentialDrive &_differential;
     Odometry &_odometry;
     Bmm150Compass &_compass;
-    State _state;
+    MotionState _state;
     TimedCommand _timed;
     DistanceCommand _distance;
     RotationCommand _rotation;
@@ -40,6 +41,8 @@ private:
 public:
     MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass);
     void begin(uint8_t acceleration = 5, float headingToleranceDegrees = 2.0f);
+    MotionState getState() const;
+    MotionSnapshot getSnapshot() const;
     void drive(int16_t velocity, int16_t turn);
     void driveFor(int16_t velocity, int16_t turn, uint32_t durationMs);
     void driveDistance(int16_t velocity, float meters);
