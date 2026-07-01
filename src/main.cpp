@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Bmm150Compass.h>
 #include <WifiManager.h>
+#include <WebSocketServer.h>
 #include <PrivateConfig.h>
 #include "domain/motion/MotionController.h"
 
@@ -33,12 +34,19 @@
 
 #define HEADING_TOLERANCE_DEGREES   12.0f
 
+#define WS_PORT                     80
+#define WS_PATH                     "/ws"
+
 #define WIFI_UPDATE_INTERVAL_MS     3000
+#define WS_UPDATE_INTERVAL_MS       100
+#define WS_BROADCAST_INTERVAL_MS    1000
 #define MOTION_UPDATE_INTERVAL_MS   100
 
 static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
 
 WifiManager wifi;
+
+WebSocketServer webSocketServer(WS_PORT, WS_PATH);
 
 MotorDriver rightMotor(MOTOR_R_PWM_PIN, MOTOR_R_NORM_PIN, MOTOR_R_REV_PIN, MOTOR_R_PWM_CHANNEL);
 MotorDriver leftMotor(MOTOR_L_PWM_PIN, MOTOR_L_NORM_PIN, MOTOR_L_REV_PIN, MOTOR_L_PWM_CHANNEL);
@@ -57,6 +65,8 @@ MotionController motion(differential, odometry, compass);
 
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
+uint32_t lastWsUpdateMs = 0;
+uint32_t lastWsBroadcastMs = 0;
 
 void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
@@ -66,6 +76,8 @@ void setup() {
     delay(500);
 
     wifi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+    webSocketServer.begin();
 
     rightMotor.begin(MOTOR_PWM_FREQ, MOTOR_R_MIN_PWM);
     leftMotor.begin(MOTOR_PWM_FREQ, MOTOR_L_MIN_PWM);
@@ -81,8 +93,6 @@ void setup() {
 }
 
 void loop() {
-    static bool ipPrinted = false;
-
     uint32_t now = millis();
 
     if (now - lastMotionUpdateMs >= MOTION_UPDATE_INTERVAL_MS) {
@@ -93,13 +103,15 @@ void loop() {
     if (now - lastWifiUpdateMs >= WIFI_UPDATE_INTERVAL_MS) {
         lastWifiUpdateMs = now;
         wifi.update();
+    }
 
-        Serial.print("wifi tick, status=");
-        Serial.println(WiFi.status());
+    if (now - lastWsUpdateMs >= WS_UPDATE_INTERVAL_MS) {
+        lastWsUpdateMs = now;
+        webSocketServer.update();
+    }
 
-        if (!ipPrinted && wifi.isConnected()) {
-            Serial.println(wifi.getLocalIp());
-            ipPrinted = true;
-        }
+    if (now - lastWsBroadcastMs >= WS_BROADCAST_INTERVAL_MS) {
+        lastWsBroadcastMs = now;
+        webSocketServer.broadcast("its alive");
     }
 }
