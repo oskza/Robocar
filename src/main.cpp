@@ -7,6 +7,7 @@
 #include "domain/motion/MotionController.h"
 #include "domain/RobotSnapshot.h"
 #include "telemetry/WebSocketTelemetry.h"
+#include "app/MotionCommandHandler.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED               115200
@@ -49,8 +50,6 @@
 #define WS_BROADCAST_INTERVAL_MS    3000
 #define MOTION_UPDATE_INTERVAL_MS   100
 
-static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
-
 WifiManager wifi;
 
 WebSocketServer webSocketServer(WS_PORT, WS_PATH);
@@ -72,6 +71,30 @@ DifferentialDrive differential(rightWheel, leftWheel);
 Odometry odometry(rightEncoder, leftEncoder);
 MotionController motion(differential, odometry, compass);
 
+static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
+
+static void executeMotionCommand(const MotionCommand &command) { motion.execute(command); }
+
+static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
+    RobotSnapshot snapshot;
+    snapshot.uptimeMs = uptimeMs;
+    snapshot.network.connected = wifi.isConnected();
+    snapshot.network.rssi = wifi.getRssi();
+    snapshot.network.localIp = wifi.getLocalIp();
+    snapshot.power.connected = powerMonitor.isConnected();
+    snapshot.power.busVoltage = powerMonitor.getBusVoltage();
+    snapshot.power.currentMilliamps = powerMonitor.getCurrentMa();
+    snapshot.power.powerMilliwatts = powerMonitor.getPowerMw();
+    snapshot.motion = motion.getSnapshot();
+    snapshot.odometry.distanceMeters = odometry.getMeters();
+    snapshot.odometry.averageTicks = odometry.getTicks();
+    return snapshot;
+}
+
+WebSocketTelemetry telemetry(webSocketServer, createSnapshot);
+
+MotionCommandHandler motionHandler(executeMotionCommand);
+
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
 uint32_t lastWsUpdateMs = 0;
@@ -79,30 +102,6 @@ uint32_t lastWsBroadcastMs = 0;
 
 void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
-
-static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
-    RobotSnapshot snapshot;
-
-    snapshot.uptimeMs = uptimeMs;
-
-    snapshot.network.connected = wifi.isConnected();
-    snapshot.network.rssi = wifi.getRssi();
-    snapshot.network.localIp = wifi.getLocalIp();
-
-    snapshot.power.connected = powerMonitor.isConnected();
-    snapshot.power.busVoltage = powerMonitor.getBusVoltage();
-    snapshot.power.currentMilliamps = powerMonitor.getCurrentMa();
-    snapshot.power.powerMilliwatts = powerMonitor.getPowerMw();
-
-    snapshot.motion = motion.getSnapshot();
-
-    snapshot.odometry.distanceMeters = odometry.getMeters();
-    snapshot.odometry.averageTicks = odometry.getTicks();
-
-    return snapshot;
-}
-
-WebSocketTelemetry telemetry(webSocketServer, createSnapshot);
 
 void setup() {
     // Serial.begin(MONITOR_SPEED);
