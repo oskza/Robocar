@@ -7,6 +7,7 @@
 #include "../odometry/Odometry.h"
 #include "MotionState.h"
 #include "MotionSnapshot.h"
+#include "MotionCommand.h"
 
 class MotionController {
 private:
@@ -43,6 +44,7 @@ public:
     void begin(uint8_t acceleration = 5, float headingToleranceDegrees = 2.0f);
     MotionState getState() const;
     MotionSnapshot getSnapshot() const;
+    void execute(const MotionCommand &cmd);
     void drive(int16_t velocity, int16_t turn);
     void driveFor(int16_t velocity, int16_t turn, uint32_t durationMs);
     void driveDistance(int16_t velocity, float meters);

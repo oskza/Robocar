@@ -57,6 +57,29 @@ MotionSnapshot MotionController::getSnapshot() const {
     return snapshot;
 }
 
+void MotionController::execute(const MotionCommand &cmd) {
+    switch (cmd.type) {
+        case MotionCommandType::STOP:
+            stop();
+            break;
+        case MotionCommandType::DRIVE:
+            drive(cmd.velocity, cmd.turn);
+            break;
+        case MotionCommandType::DRIVE_FOR:
+            driveFor(cmd.velocity, cmd.turn, cmd.durationMs);
+            break;
+        case MotionCommandType::DRIVE_DISTANCE:
+            driveDistance(cmd.velocity, cmd.distanceMeters);
+            break;
+        case MotionCommandType::ROTATE_TO:
+            rotateTo(cmd.angleDegrees, cmd.speed);
+            break;
+        case MotionCommandType::ROTATE_BY:
+            rotateBy(cmd.angleDegrees, cmd.speed);
+            break;
+    }
+}
+
 void MotionController::drive(int16_t velocity, int16_t turn) {
     _clearCommands();
     _state = MotionState::MANUAL;
