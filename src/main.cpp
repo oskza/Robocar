@@ -73,8 +73,6 @@ MotionController motion(differential, odometry, compass);
 
 static float wheelCircumference(float diameter, float factor = 1.0f) { return diameter * PI * factor; }
 
-static void executeMotionCommand(const MotionCommand &command) { motion.execute(command); }
-
 static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
     RobotSnapshot snapshot;
     snapshot.uptimeMs = uptimeMs;
@@ -93,7 +91,11 @@ static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
 
 WebSocketTelemetry telemetry(webSocketServer, createSnapshot);
 
+static void executeMotionCommand(const MotionCommand &command) { motion.execute(command); }
+
 MotionCommandHandler motionHandler(executeMotionCommand);
+
+static void handleWebSocketMessage(const char *data, size_t len) { motionHandler.handle(data, len); }
 
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
@@ -109,7 +111,7 @@ void setup() {
 
     if (!wifi.begin(WIFI_SSID, WIFI_PASSWORD)) {}
 
-    webSocketServer.begin();
+    webSocketServer.begin(handleWebSocketMessage);
 
     rightMotor.begin(MOTOR_PWM_FREQ, MOTOR_R_MIN_PWM);
     leftMotor.begin(MOTOR_PWM_FREQ, MOTOR_L_MIN_PWM);
