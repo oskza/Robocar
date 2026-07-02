@@ -5,23 +5,16 @@ MotionController::MotionController(DifferentialDrive &differential, Odometry &od
       _odometry(odometry),
       _compass(compass),
       _state(MotionState::IDLE),
-      _timed{0},
-      _distance{0},
-      _rotation{0.0f, 0},
       _headingToleranceDegrees(2.0f) {}
 
-void MotionController::_clearCommands() {
-    _timed.clear();
-    _distance.clear();
-    _rotation.clear();
+void MotionController::_clearTargets() {
+    _timed = {};
+    _distance = {};
+    _rotation = {};
 }
 
-bool MotionController::_timedExpired(uint32_t nowMs) const { return (int32_t)(nowMs - _timed.endTime) >= 0; }
-
-bool MotionController::_distanceReached() const { return _odometry.getTicks() >= _distance.targetTicks; }
-
 void MotionController::_updateRotation() {
-    float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.targetHeadingDegrees);
+    const float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.headingDegrees);
     if (fabsf(diff) <= _headingToleranceDegrees) {
         brake();
         return;
@@ -33,7 +26,7 @@ void MotionController::_updateRotation() {
 void MotionController::begin(uint8_t acceleration, float headingToleranceDegrees) {
     _differential.begin(acceleration);
     _headingToleranceDegrees = headingToleranceDegrees;
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::IDLE;
 }
 
@@ -45,7 +38,7 @@ MotionSnapshot MotionController::getSnapshot() const {
     snapshot.stopped = isStopped();
     snapshot.currentHeadingDegrees = _compass.getHeadingDegrees();
     if (_state == MotionState::ROTATING) {
-        snapshot.targetHeadingDegrees = _rotation.targetHeadingDegrees;
+        snapshot.targetHeadingDegrees = _rotation.headingDegrees;
         snapshot.headingErrorDegrees = AngleMath::differenceDegrees(
             snapshot.targetHeadingDegrees,
             snapshot.currentHeadingDegrees
@@ -81,7 +74,7 @@ void MotionController::execute(const MotionCommand &cmd) {
 }
 
 void MotionController::drive(int16_t velocity, int16_t turn) {
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::MANUAL;
     _differential.drive(velocity, turn);
 }
@@ -91,9 +84,9 @@ void MotionController::driveFor(int16_t velocity, int16_t turn, uint32_t duratio
         stop();
         return;
     }
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::TIMED;
-    _timed.endTime = millis() + durationMs;
+    _timed.endTimeMs = millis() + durationMs;
     _differential.drive(velocity, turn);
 }
 
@@ -102,13 +95,13 @@ void MotionController::driveDistance(int16_t velocity, float meters) {
         stop();
         return;
     }
-    uint32_t targetTicks = _odometry.metersToTicks(meters);
+    const uint32_t targetTicks = _odometry.metersToTicks(meters);
     if (targetTicks == 0) {
         stop();
         return;
     }
     _odometry.reset();
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::DISTANCE;
     _distance.targetTicks = targetTicks;
     _differential.drive(velocity, 0);
@@ -119,10 +112,10 @@ void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
         stop();
         return;
     }
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::ROTATING;
-    _rotation.targetHeadingDegrees = AngleMath::normalizeDegrees(headingDegrees);
-    _rotation.speed = constrain(speed, 1, MotorDriver::MAX_OUTPUT);
+    _rotation.speed = (speed > MotorDriver::MAX_OUTPUT)
+        ? MotorDriver::MAX_OUTPUT : speed;
 }
 
 void MotionController::rotateBy(float degrees, uint8_t speed) {
@@ -132,11 +125,11 @@ void MotionController::rotateBy(float degrees, uint8_t speed) {
 void MotionController::update(uint32_t nowMs) {
     switch (_state) {
         case MotionState::TIMED:
-            if (_timedExpired(nowMs))
+            if (_timed.expired(nowMs))
                 stop();
             break;
         case MotionState::DISTANCE:
-            if (_distanceReached())
+            if (_distance.reached(_odometry.getTicks()))
                 stop();
             break;
         case MotionState::ROTATING:
@@ -150,13 +143,13 @@ void MotionController::update(uint32_t nowMs) {
 }
 
 void MotionController::stop() {
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::IDLE;
     _differential.stop();
 }
 
 void MotionController::brake() {
-    _clearCommands();
+    _clearTargets();
     _state = MotionState::IDLE;
     _differential.brake();
 }

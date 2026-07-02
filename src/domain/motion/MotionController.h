@@ -11,33 +11,24 @@
 
 class MotionController {
 private:
-    struct TimedCommand {
-        uint32_t endTime;
-        void clear() { endTime = 0; }
-    };
-    struct DistanceCommand {
-        uint32_t targetTicks;
-        void clear() { targetTicks = 0; }
-    };
-    struct RotationCommand {
-        float targetHeadingDegrees;
-        uint8_t speed;
-        void clear() {
-            targetHeadingDegrees = 0.0f;
-            speed = 0;
-        }
-    };
     DifferentialDrive &_differential;
     Odometry &_odometry;
     Bmm150Compass &_compass;
     MotionState _state;
-    TimedCommand _timed;
-    DistanceCommand _distance;
-    RotationCommand _rotation;
     float _headingToleranceDegrees;
-    void _clearCommands();
-    bool _timedExpired(uint32_t nowMs) const;
-    bool _distanceReached() const;
+    struct TimedTarget {
+        uint32_t endTimeMs = 0;
+        bool expired(uint32_t nowMs) const { return (int32_t)(nowMs - endTimeMs) >= 0; }
+    } _timed;
+    struct DistanceTarget {
+        uint32_t targetTicks = 0;
+        bool reached(uint32_t ticks) const { return ticks >= targetTicks; }
+    } _distance;
+    struct RotationTarget {
+        float headingDegrees = 0.0f;
+        uint8_t speed = 0;
+    } _rotation;
+    void _clearTargets();
     void _updateRotation();
 public:
     MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass);
