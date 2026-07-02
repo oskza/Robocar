@@ -124,11 +124,11 @@ void MotionController::update(uint32_t nowMs) {
     switch (_state) {
         case MotionState::TIMED:
             if (_timed.expired(nowMs))
-                stop();
+                brake();
             break;
         case MotionState::DISTANCE:
             if (_distance.reached(_odometry.getTicks()))
-                stop();
+                brake();
             break;
         case MotionState::ROTATING:
             _updateRotation();
