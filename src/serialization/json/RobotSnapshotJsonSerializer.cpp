@@ -1,7 +1,7 @@
-#include "RobotSnapshotJsonWriter.h"
+#include "RobotSnapshotJsonSerializer.h"
 #include <ArduinoJson.h>
 
-const char *RobotSnapshotJsonWriter::_motionStateToString(MotionState state) {
+const char *RobotSnapshotJsonSerializer::_motionStateToString(MotionState state) {
     switch (state) {
         case MotionState::IDLE:
             return "IDLE";
@@ -18,7 +18,7 @@ const char *RobotSnapshotJsonWriter::_motionStateToString(MotionState state) {
     }
 }
 
-bool RobotSnapshotJsonWriter::write(const RobotSnapshot &snapshot, char *buffer, size_t size) {
+bool RobotSnapshotJsonSerializer::write(const RobotSnapshot &snapshot, char *buffer, size_t size) {
     if (!buffer || size == 0)
         return false;
 
@@ -43,10 +43,8 @@ bool RobotSnapshotJsonWriter::write(const RobotSnapshot &snapshot, char *buffer,
     motion["currentHeadingDegrees"] = snapshot.motion.currentHeadingDegrees;
     motion["targetHeadingDegrees"] = snapshot.motion.targetHeadingDegrees;
     motion["headingErrorDegrees"] = snapshot.motion.headingErrorDegrees;
-
-    JsonObject drive = doc["drive"].to<JsonObject>();
-    drive["leftOutput"] = snapshot.drive.leftOutput;
-    drive["rightOutput"] = snapshot.drive.rightOutput;
+    motion["leftOutput"] = snapshot.motion.leftOutput;
+    motion["rightOutput"] = snapshot.motion.rightOutput;
 
     JsonObject odometry = doc["odometry"].to<JsonObject>();
     odometry["distanceMeters"] = snapshot.odometry.distanceMeters;

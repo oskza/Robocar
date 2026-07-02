@@ -37,16 +37,14 @@ MotionSnapshot MotionController::getSnapshot() const {
     snapshot.state = _state;
     snapshot.stopped = isStopped();
     snapshot.currentHeadingDegrees = _compass.getHeadingDegrees();
-    if (_state == MotionState::ROTATING) {
-        snapshot.targetHeadingDegrees = _rotation.headingDegrees;
-        snapshot.headingErrorDegrees = AngleMath::differenceDegrees(
+    snapshot.targetHeadingDegrees = _rotation.headingDegrees;
+    snapshot.headingErrorDegrees = (_state == MotionState::ROTATING)
+        ? AngleMath::differenceDegrees(
             snapshot.targetHeadingDegrees,
             snapshot.currentHeadingDegrees
-        );
-    } else {
-        snapshot.targetHeadingDegrees = 0.0f;
-        snapshot.headingErrorDegrees = 0.0f;
-    }
+        ) : 0.0f;
+    snapshot.leftOutput = _differential.getLeftOutput();
+    snapshot.rightOutput = _differential.getRightOutput();
     return snapshot;
 }
 
@@ -114,8 +112,8 @@ void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
     }
     _clearTargets();
     _state = MotionState::ROTATING;
-    _rotation.speed = (speed > MotorDriver::MAX_OUTPUT)
-        ? MotorDriver::MAX_OUTPUT : speed;
+    _rotation.headingDegrees = AngleMath::normalizeDegrees(headingDegrees);
+    _rotation.speed = (speed > MotorDriver::MAX_OUTPUT) ? MotorDriver::MAX_OUTPUT : speed;
 }
 
 void MotionController::rotateBy(float degrees, uint8_t speed) {

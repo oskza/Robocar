@@ -1,9 +1,9 @@
-#ifndef ROBOT_SNAPSHOT_JSON_WRITER_H
-#define ROBOT_SNAPSHOT_JSON_WRITER_H
+#ifndef ROBOT_SNAPSHOT_JSON_SERIALIZER_H
+#define ROBOT_SNAPSHOT_JSON_SERIALIZER_H
 #include <Arduino.h>
-#include "RobotSnapshot.h"
+#include "../../domain/RobotSnapshot.h"
 
-class RobotSnapshotJsonWriter {
+class RobotSnapshotJsonSerializer {
 private:
     static const char *_motionStateToString(MotionState state);
 public:

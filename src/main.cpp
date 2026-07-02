@@ -5,7 +5,8 @@
 #include <Bmm150Compass.h>
 #include <Ina226PowerMonitor.h>
 #include "domain/motion/MotionController.h"
-#include "domain/debug/WebSocketTelemetry.h"
+#include "domain/RobotSnapshot.h"
+#include "telemetry/WebSocketTelemetry.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED               115200
@@ -71,9 +72,6 @@ DifferentialDrive differential(rightWheel, leftWheel);
 Odometry odometry(rightEncoder, leftEncoder);
 MotionController motion(differential, odometry, compass);
 
-RobotStateReader robotStateReader(wifi, powerMonitor, motion, differential, odometry);
-WebSocketTelemetry telemetry(robotStateReader, webSocketServer);
-
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
 uint32_t lastWsUpdateMs = 0;
@@ -81,6 +79,30 @@ uint32_t lastWsBroadcastMs = 0;
 
 void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
+
+static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
+    RobotSnapshot snapshot;
+
+    snapshot.uptimeMs = uptimeMs;
+
+    snapshot.network.connected = wifi.isConnected();
+    snapshot.network.rssi = wifi.getRssi();
+    snapshot.network.localIp = wifi.getLocalIp();
+
+    snapshot.power.connected = powerMonitor.isConnected();
+    snapshot.power.busVoltage = powerMonitor.getBusVoltage();
+    snapshot.power.currentMilliamps = powerMonitor.getCurrentMa();
+    snapshot.power.powerMilliwatts = powerMonitor.getPowerMw();
+
+    snapshot.motion = motion.getSnapshot();
+
+    snapshot.odometry.distanceMeters = odometry.getMeters();
+    snapshot.odometry.averageTicks = odometry.getTicks();
+
+    return snapshot;
+}
+
+WebSocketTelemetry telemetry(webSocketServer, createSnapshot);
 
 void setup() {
     // Serial.begin(MONITOR_SPEED);

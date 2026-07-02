@@ -1,5 +1,6 @@
 #ifndef MOTION_SNAPSHOT_H
 #define MOTION_SNAPSHOT_H
+#include <stdint.h>
 #include "MotionState.h"
 
 struct MotionSnapshot {
@@ -8,5 +9,7 @@ struct MotionSnapshot {
     float currentHeadingDegrees;
     float targetHeadingDegrees;
     float headingErrorDegrees;
+    int16_t leftOutput;
+    int16_t rightOutput;
 };
 #endif
