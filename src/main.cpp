@@ -48,10 +48,10 @@
 
 #define HOSTNAME                    "robocar"
 
-#define WIFI_UPDATE_INTERVAL_MS     5000
+#define MOTION_UPDATE_INTERVAL_MS   50
+#define WIFI_UPDATE_INTERVAL_MS     3000
 #define WS_UPDATE_INTERVAL_MS       100
 #define WS_BROADCAST_INTERVAL_MS    3000
-#define MOTION_UPDATE_INTERVAL_MS   100
 
 WifiManager wifi;
 
