@@ -1,10 +1,13 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <Esp.h>
 #include <WifiManager.h>
 #include <PrivateConfig.h>
 #include <WebSocketServer.h>
 #include <Bmm150Compass.h>
 #include <Ina226PowerMonitor.h>
+#include "app/SystemCommandHandler.h"
+#include "domain/system/SystemCommand.h"
 #include "domain/motion/MotionController.h"
 #include "domain/RobotSnapshot.h"
 #include "telemetry/WebSocketTelemetry.h"
@@ -96,6 +99,20 @@ WebSocketTelemetry telemetry(webSocketServer, createSnapshot);
 
 static MotionCommandHandler motionHandler([](const MotionCommand &command) { motion.execute(command); });
 
+static SystemCommandHandler systemHandler([](const SystemCommand &command) {
+    switch (command.type) {
+        case SystemCommandType::PING:
+            break;
+        case SystemCommandType::RESTART:
+            ESP.restart();
+            break;
+        case SystemCommandType::FACTORY_RESET:
+            /** TODO: Reset persisted config */
+            ESP.restart();
+            break;
+    }
+});
+
 uint32_t lastWifiUpdateMs = 0;
 uint32_t lastMotionUpdateMs = 0;
 uint32_t lastWsUpdateMs = 0;
@@ -110,7 +127,11 @@ void setup() {
     ArduinoOTA.setHostname(HOSTNAME);
     ArduinoOTA.begin();
 
-    webSocketServer.begin([](const char *data, size_t len) { motionHandler.handle(data, len); });
+    webSocketServer.begin([](const char *data, size_t len) {
+        if (motionHandler.handle(data, len))
+            return;
+        systemHandler.handle(data, len);
+    });
 
     rightMotor.begin(MOTOR_PWM_FREQ, MOTOR_R_MIN_PWM);
     leftMotor.begin(MOTOR_PWM_FREQ, MOTOR_L_MIN_PWM);
