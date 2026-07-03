@@ -14,6 +14,10 @@ void MotionController::_clearTargets() {
 }
 
 void MotionController::_updateRotation() {
+    if (!_compass.isAvailable()) {
+        stop();
+        return;
+    }
     const float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.headingDegrees);
     if (fabsf(diff) <= _headingToleranceDegrees) {
         brake();
@@ -106,7 +110,7 @@ void MotionController::driveDistance(int16_t velocity, float meters) {
 }
 
 void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
-    if (speed == 0) {
+    if (!_compass.isAvailable() || speed == 0) {
         stop();
         return;
     }
