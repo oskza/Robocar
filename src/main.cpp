@@ -1,17 +1,18 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <Esp.h>
-#include <WifiManager.h>
 #include <PrivateConfig.h>
 #include <WebSocketServer.h>
 #include <Bmm150Compass.h>
 #include <Ina226PowerMonitor.h>
-#include "app/SystemCommandHandler.h"
 #include "domain/system/SystemCommand.h"
+#include "domain/network/WifiStorage.h"
+#include "domain/network/WifiController.h"
 #include "domain/motion/MotionController.h"
 #include "domain/RobotSnapshot.h"
-#include "telemetry/WebSocketTelemetry.h"
 #include "app/MotionCommandHandler.h"
+#include "app/SystemCommandHandler.h"
+#include "telemetry/WebSocketTelemetry.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED               115200
@@ -49,14 +50,13 @@
 #define WS_PORT                     80
 #define WS_PATH                     "/ws"
 
-#define HOSTNAME                    "robocar"
-
 #define MOTION_UPDATE_INTERVAL_MS   50
 #define WIFI_UPDATE_INTERVAL_MS     3000
 #define WS_UPDATE_INTERVAL_MS       100
 #define WS_BROADCAST_INTERVAL_MS    3000
 
-WifiManager wifi;
+WifiStorage wifiStorage;
+WifiController wifi;
 
 WebSocketServer webSocketServer(WS_PORT, WS_PATH);
 
@@ -82,9 +82,7 @@ static float wheelCircumference(float diameter, float factor = 1.0f) { return di
 static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
     RobotSnapshot snapshot;
     snapshot.uptimeMs = uptimeMs;
-    snapshot.network.connected = wifi.isConnected();
-    snapshot.network.rssi = wifi.getRssi();
-    snapshot.network.localIp = wifi.getLocalIp();
+    snapshot.network = wifi.getSnapshot();
     snapshot.power.connected = powerMonitor.isConnected();
     snapshot.power.busVoltage = powerMonitor.getBusVoltage();
     snapshot.power.currentMilliamps = powerMonitor.getCurrentMa();
@@ -122,9 +120,20 @@ void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 
 void setup() {
-    if (!wifi.begin(WIFI_SSID, WIFI_PASSWORD)) {}
 
-    ArduinoOTA.setHostname(HOSTNAME);
+    wifiStorage.begin();
+
+    WifiConfig wifiCfg{};
+    WifiCredentials staCreds{};
+    WifiCredentials apCreds{};
+
+    wifiStorage.loadConfig(wifiCfg);
+    wifiStorage.loadStationCredentials(staCreds);
+    wifiStorage.loadAccessPointCredentials(apCreds);
+
+    wifi.begin(wifiCfg, staCreds, apCreds);
+
+    ArduinoOTA.setHostname(wifi.getHostname());
     ArduinoOTA.begin();
 
     webSocketServer.begin([](const char *data, size_t len) {
@@ -160,7 +169,7 @@ void loop() {
 
     if (now - lastWifiUpdateMs >= WIFI_UPDATE_INTERVAL_MS) {
         lastWifiUpdateMs = now;
-        wifi.update();
+        wifi.update(now);
     }
 
     if (now - lastWsUpdateMs >= WS_UPDATE_INTERVAL_MS) {

@@ -2,15 +2,12 @@
 #define ROBOT_SNAPSHOT_H
 #include <stdint.h>
 #include <IPAddress.h>
+#include "network/WifiSnapshot.h"
 #include "motion/MotionSnapshot.h"
 
 struct RobotSnapshot {
     uint32_t uptimeMs;
-    struct {
-        bool connected;
-        int32_t rssi;
-        IPAddress localIp;
-    } network;
+    WifiSnapshot network;
     struct {
         bool connected;
         float busVoltage;
