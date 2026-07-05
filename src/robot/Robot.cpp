@@ -66,3 +66,134 @@ RobotSnapshot Robot::getSnapshot() const {
     snapshot.power = _power.getSnapshot();
     return snapshot;
 }
+
+bool Robot::getConfig(RobotConfig &cfg) const {
+    cfg = _cfg;
+    return true;
+}
+
+bool Robot::setConfig(const RobotConfig &cfg) {
+    if (!_storage.saveConfig(cfg))
+        return false;
+    _cfg = cfg;
+    return true;
+}
+
+bool Robot::resetConfig() {
+    if (!_storage.resetConfig())
+        return false;
+    return _storage.loadConfig(_cfg);
+}
+
+SystemSnapshot Robot::getSystemSnapshot() const { return _system.getSnapshot(); }
+
+uint32_t Robot::getUptimeMs() const { return _system.getUptimeMs(); }
+
+void Robot::restart() { _system.restart(); }
+
+void Robot::factoryReset() { _system.factoryReset(); }
+
+PowerSnapshot Robot::getPowerSnapshot() const { return _power.getSnapshot(); }
+
+MotionSnapshot Robot::getMotionSnapshot() const { return _motion.getSnapshot(); }
+
+bool Robot::getMotionConfig(MotionConfig &cfg) const { return _motionStorage.loadConfig(cfg); }
+
+bool Robot::setMotionConfig(const MotionConfig &cfg) {
+    if (!_motionStorage.saveConfig(cfg))
+        return false;
+    // TODO: Re-apply motion config safely without full subsystem restart.
+    return true;
+}
+
+bool Robot::resetMotion() {
+    if (!_motionStorage.resetConfig())
+        return false;
+    // TODO: Re-apply motion defaults safely without full subsystem restart.
+    return true;
+}
+
+void Robot::stop() { _motion.stop(); }
+
+void Robot::brake() { _motion.brake(); }
+
+void Robot::drive(int16_t velocity, int16_t turn) { _motion.drive(velocity, turn); }
+
+void Robot::driveFor(int16_t velocity, int16_t turn, uint32_t durationMs) { _motion.driveFor(velocity, turn, durationMs); }
+
+void Robot::driveDistance(int16_t velocity, float meters) { _motion.driveDistance(velocity, meters); }
+
+void Robot::rotateTo(float headingDegrees, uint8_t speed) { _motion.rotateTo(headingDegrees, speed); }
+
+void Robot::rotateBy(float degrees, uint8_t speed) { _motion.rotateBy(degrees, speed); }
+
+WifiSnapshot Robot::getWifiSnapshot() const { return _wifi.getSnapshot(); }
+
+bool Robot::getWifiConfig(WifiConfig &cfg) const { return _wifiStorage.loadConfig(cfg); }
+
+bool Robot::setWifiConfig(const WifiConfig &cfg) {
+    if (!_wifiStorage.saveConfig(cfg))
+        return false;
+    _wifi.setConfig(cfg);
+    return true;
+}
+
+bool Robot::resetWifiConfig() {
+    if (!_wifiStorage.resetConfig())
+        return false;
+    WifiConfig cfg{};
+    _wifiStorage.loadConfig(cfg);
+    _wifi.setConfig(cfg);
+    return true;
+}
+
+bool Robot::setWifiCredentials(const WifiCredentials &credentials) {
+    if (!_wifiStorage.saveStationCredentials(credentials))
+        return false;
+    _wifi.setStationCredentials(credentials);
+    return true;
+}
+
+bool Robot::resetWifiCredentials() {
+    if (!_wifiStorage.resetStationCredentials())
+        return false;
+    WifiCredentials credentials{};
+    _wifiStorage.loadStationCredentials(credentials);
+    _wifi.setStationCredentials(credentials);
+    return true;
+}
+
+bool Robot::getAccessPointCredentials(WifiCredentials &credentials) const { return _wifiStorage.loadAccessPointCredentials(credentials); }
+
+bool Robot::setAccessPointCredentials(const WifiCredentials &credentials) {
+    if (!_wifiStorage.saveAccessPointCredentials(credentials))
+        return false;
+    _wifi.setAccessPointCredentials(credentials);
+    return true;
+}
+
+bool Robot::resetAccessPointCredentials() {
+    if (!_wifiStorage.resetAccessPointCredentials())
+        return false;
+    WifiCredentials credentials{};
+    _wifiStorage.loadAccessPointCredentials(credentials);
+    _wifi.setAccessPointCredentials(credentials);
+    return true;
+}
+
+bool Robot::resetWifi() {
+    if (!_wifiStorage.resetAll())
+        return false;
+
+    WifiConfig cfg{};
+    WifiCredentials station{};
+    WifiCredentials accessPoint{};
+
+    _wifiStorage.loadConfig(cfg);
+    _wifiStorage.loadStationCredentials(station);
+    _wifiStorage.loadAccessPointCredentials(accessPoint);
+
+    _wifi.begin(cfg, station, accessPoint);
+
+    return true;
+}

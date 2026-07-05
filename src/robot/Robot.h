@@ -31,13 +31,49 @@ public:
         MotionStorage &motionStorage,
         RobotStorage &storage
     );
+
     void begin(
         uint32_t motorPwmFrequency,
         uint8_t encoderSlots,
         float powerMaxCurrentAmps,
         float powerShuntOhms
     );
+
     void update();
+
     RobotSnapshot getSnapshot() const;
+    bool getConfig(RobotConfig &cfg) const;
+    bool setConfig(const RobotConfig &cfg);
+    bool resetConfig();
+
+    SystemSnapshot getSystemSnapshot() const;
+    uint32_t getUptimeMs() const;
+    void restart();
+    void factoryReset();
+
+    PowerSnapshot getPowerSnapshot() const;
+
+    MotionSnapshot getMotionSnapshot() const;
+    bool getMotionConfig(MotionConfig &cfg) const;
+    bool setMotionConfig(const MotionConfig &cfg);
+    bool resetMotion();
+    void stop();
+    void brake();
+    void drive(int16_t velocity, int16_t turn);
+    void driveFor(int16_t velocity, int16_t turn, uint32_t durationMs);
+    void driveDistance(int16_t velocity, float meters);
+    void rotateTo(float headingDegrees, uint8_t speed);
+    void rotateBy(float degrees, uint8_t speed);
+
+    WifiSnapshot getWifiSnapshot() const;
+    bool getWifiConfig(WifiConfig &cfg) const;
+    bool setWifiConfig(const WifiConfig &cfg);
+    bool resetWifiConfig();
+    bool setWifiCredentials(const WifiCredentials &credentials);
+    bool resetWifiCredentials();
+    bool getAccessPointCredentials(WifiCredentials &credentials) const;
+    bool setAccessPointCredentials(const WifiCredentials &credentials);
+    bool resetAccessPointCredentials();
+    bool resetWifi();
 };
 #endif
