@@ -3,22 +3,14 @@
 #include <stdint.h>
 #include <IPAddress.h>
 #include "system/SystemSnapshot.h"
+#include "power/PowerSnapshot.h"
 #include "network/WifiSnapshot.h"
 #include "motion/MotionSnapshot.h"
 
 struct RobotSnapshot {
     SystemSnapshot system;
+    PowerSnapshot power;
     WifiSnapshot network;
     MotionSnapshot motion;
-    struct {
-        bool connected;
-        float busVoltage;
-        float currentMilliamps;
-        float powerMilliwatts;
-    } power;
-    struct {
-        float distanceMeters;
-        uint32_t averageTicks;
-    } odometry;
 };
 #endif
