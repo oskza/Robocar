@@ -81,13 +81,16 @@ static float wheelCircumference(float diameter, float factor = 1.0f) { return di
 
 static RobotSnapshot createSnapshot(uint32_t uptimeMs) {
     RobotSnapshot snapshot;
-    snapshot.uptimeMs = uptimeMs;
+    snapshot.system.uptimeMs = uptimeMs;
+    snapshot.system.heap.freeBytes = ESP.getFreeHeap();
+    snapshot.system.heap.minFreeBytes = ESP.getMinFreeHeap();
+    snapshot.system.heap.maxAllocBytes = ESP.getMaxAllocHeap();
     snapshot.network = wifi.getSnapshot();
+    snapshot.motion = motion.getSnapshot();
     snapshot.power.connected = powerMonitor.isConnected();
     snapshot.power.busVoltage = powerMonitor.getBusVoltage();
     snapshot.power.currentMilliamps = powerMonitor.getCurrentMa();
     snapshot.power.powerMilliwatts = powerMonitor.getPowerMw();
-    snapshot.motion = motion.getSnapshot();
     snapshot.odometry.distanceMeters = odometry.getMeters();
     snapshot.odometry.averageTicks = odometry.getTicks();
     return snapshot;
@@ -120,7 +123,6 @@ void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 
 void setup() {
-
     wifiStorage.begin();
 
     WifiConfig wifiCfg{};

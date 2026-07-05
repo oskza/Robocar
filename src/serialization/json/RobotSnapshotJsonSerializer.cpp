@@ -24,7 +24,13 @@ bool RobotSnapshotJsonSerializer::write(const RobotSnapshot &snapshot, char *buf
 
     JsonDocument doc;
 
-    doc["uptimeMs"] = snapshot.uptimeMs;
+    JsonObject system = doc["system"].to<JsonObject>();
+    system["uptimeMs"] = snapshot.system.uptimeMs;
+
+    JsonObject heap = system["heap"].to<JsonObject>();
+    heap["freeBytes"] = snapshot.system.heap.freeBytes;
+    heap["minFreeBytes"] = snapshot.system.heap.minFreeBytes;
+    heap["maxAllocBytes"] = snapshot.system.heap.maxAllocBytes;
 
     JsonObject network = doc["network"].to<JsonObject>();
     network["connected"] = snapshot.network.connected;
