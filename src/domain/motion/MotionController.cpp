@@ -49,6 +49,8 @@ MotionSnapshot MotionController::getSnapshot() const {
         ) : 0.0f;
     snapshot.leftOutput = _differential.getLeftOutput();
     snapshot.rightOutput = _differential.getRightOutput();
+    snapshot.odometry.distanceMeters = _odometry.getMeters();
+    snapshot.odometry.averageTicks = _odometry.getTicks();
     return snapshot;
 }
 

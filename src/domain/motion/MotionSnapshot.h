@@ -11,5 +11,9 @@ struct MotionSnapshot {
     float headingErrorDegrees;
     int16_t leftOutput;
     int16_t rightOutput;
+    struct {
+        float distanceMeters;
+        uint32_t averageTicks;
+    } odometry;
 };
 #endif
