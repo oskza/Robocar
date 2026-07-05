@@ -1,5 +1,5 @@
 #include "MotionCommandHandler.h"
-#include "../serialization/json/MotionCommandJsonDeserializer.h"
+#include "../../../serialization/json/MotionCommandJsonDeserializer.h"
 
 MotionCommandHandler::MotionCommandHandler(Executor executor) : _executor(executor) {}
 
