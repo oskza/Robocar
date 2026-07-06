@@ -7,27 +7,17 @@ static constexpr const char *KEY_CONFIG = "cfg";
 static constexpr const char *KEY_STA_CREDENTIALS = "sta";
 static constexpr const char *KEY_AP_CREDENTIALS = "ap";
 
-bool WifiStorage::begin() { return _preferences.begin(NAMESPACE, false); }
-
-bool WifiStorage::_load(const char *key, void *data, size_t size) {
-    return _preferences.getBytes(key, data, size) == size;
-}
-
-bool WifiStorage::_save(const char *key, const void *data, size_t size) {
-    return _preferences.putBytes(key, data, size) == size;
-}
+bool WifiStorage::begin() { return _store.begin(NAMESPACE); }
 
 bool WifiStorage::loadConfig(WifiConfig &cfg) {
-    if (_load(KEY_CONFIG, &cfg, sizeof(cfg)))
+    if (_store.load(KEY_CONFIG, &cfg, sizeof(cfg)))
         return true;
     WifiDefaults::applyConfig(cfg);
     saveConfig(cfg);
     return false;
 }
 
-bool WifiStorage::saveConfig(const WifiConfig &cfg) {
-    return _save(KEY_CONFIG, &cfg, sizeof(cfg));
-}
+bool WifiStorage::saveConfig(const WifiConfig &cfg) { return _store.save(KEY_CONFIG, &cfg, sizeof(cfg)); }
 
 bool WifiStorage::resetConfig() {
     WifiConfig cfg{};
@@ -36,7 +26,7 @@ bool WifiStorage::resetConfig() {
 }
 
 bool WifiStorage::loadStationCredentials(WifiCredentials &credentials) {
-    if (_load(KEY_STA_CREDENTIALS, &credentials, sizeof(credentials)))
+    if (_store.load(KEY_STA_CREDENTIALS, &credentials, sizeof(credentials)))
         return true;
     WifiDefaults::applyStationCredentials(credentials);
     saveStationCredentials(credentials);
@@ -44,7 +34,7 @@ bool WifiStorage::loadStationCredentials(WifiCredentials &credentials) {
 }
 
 bool WifiStorage::saveStationCredentials(const WifiCredentials &credentials) {
-    return _save(KEY_STA_CREDENTIALS, &credentials, sizeof(credentials));
+    return _store.save(KEY_STA_CREDENTIALS, &credentials, sizeof(credentials));
 }
 
 bool WifiStorage::resetStationCredentials() {
@@ -54,7 +44,7 @@ bool WifiStorage::resetStationCredentials() {
 }
 
 bool WifiStorage::loadAccessPointCredentials(WifiCredentials &credentials) {
-    if (_load(KEY_AP_CREDENTIALS, &credentials, sizeof(credentials)))
+    if (_store.load(KEY_AP_CREDENTIALS, &credentials, sizeof(credentials)))
         return true;
     WifiDefaults::applyAccessPointCredentials(credentials);
     saveAccessPointCredentials(credentials);
@@ -62,7 +52,7 @@ bool WifiStorage::loadAccessPointCredentials(WifiCredentials &credentials) {
 }
 
 bool WifiStorage::saveAccessPointCredentials(const WifiCredentials &credentials) {
-    return _save(KEY_AP_CREDENTIALS, &credentials, sizeof(credentials));
+    return _store.save(KEY_AP_CREDENTIALS, &credentials, sizeof(credentials));
 }
 
 bool WifiStorage::resetAccessPointCredentials() {
@@ -72,7 +62,7 @@ bool WifiStorage::resetAccessPointCredentials() {
 }
 
 bool WifiStorage::resetAll() {
-    if (!_preferences.clear())
+    if (!_store.clear())
         return false;
     bool ok = resetConfig();
     ok &= resetStationCredentials();
