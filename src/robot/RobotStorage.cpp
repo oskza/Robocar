@@ -4,24 +4,20 @@
 static constexpr const char *NAMESPACE = "app";
 static constexpr const char *KEY_CONFIG = "cfg";
 
-bool RobotStorage::_load(const char *key, void *data, size_t size) { return _preferences.getBytes(key, data, size) == size; }
-
-bool RobotStorage::_save(const char *key, const void *data, size_t size) { return _preferences.putBytes(key, data, size) == size; }
-
-bool RobotStorage::begin() { return _preferences.begin(NAMESPACE, false); }
+bool RobotStorage::begin() { return _store.begin(NAMESPACE); }
 
 bool RobotStorage::loadConfig(RobotConfig &cfg) {
-    if (_load(KEY_CONFIG, &cfg, sizeof(cfg)))
+    if (_store.load(KEY_CONFIG, &cfg, sizeof(cfg)))
         return true;
     RobotDefaults::applyConfig(cfg);
     saveConfig(cfg);
     return false;
 }
 
-bool RobotStorage::saveConfig(const RobotConfig &cfg) { return _save(KEY_CONFIG, &cfg, sizeof(cfg)); }
+bool RobotStorage::saveConfig(const RobotConfig &cfg) { return _store.save(KEY_CONFIG, &cfg, sizeof(cfg)); }
 
 bool RobotStorage::resetConfig() {
-    if (!_preferences.clear())
+    if (!_store.clear())
         return false;
     RobotConfig cfg{};
     RobotDefaults::applyConfig(cfg);
