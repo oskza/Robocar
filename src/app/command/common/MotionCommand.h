@@ -1,14 +1,23 @@
 #ifndef MOTION_COMMAND_H
 #define MOTION_COMMAND_H
-#include <stdint.h>
+#include "../../../subsystems/motion/MotionConfig.h"
 
 enum class MotionCommand : uint8_t {
-    STATUS, STOP, DRIVE, DRIVE_FOR,
-    DRIVE_DISTANCE, ROTATE_TO, ROTATE_BY
+    STATUS,
+    GET_CONFIG,
+    SET_CONFIG,
+    RESET_CONFIG,
+    STOP,
+    DRIVE,
+    DRIVE_FOR,
+    DRIVE_DISTANCE,
+    ROTATE_TO,
+    ROTATE_BY
 };
 
 struct MotionCommandPayload {
     union {
+        MotionConfig cfg;
         struct {
             int16_t velocity;
             int16_t turn;
@@ -19,7 +28,7 @@ struct MotionCommandPayload {
             uint32_t durationMs;
         } driveFor;
         struct {
-            uint8_t velocity;
+            int16_t velocity;
             float distanceMeters;
         } driveDistance;
         struct {
