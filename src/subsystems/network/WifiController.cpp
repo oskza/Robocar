@@ -19,21 +19,17 @@ void WifiController::_onWifiEvent(WiFiEvent_t event) {
 void WifiController::_handleWifiEvent(WiFiEvent_t event) {
     if (_mode != WifiMode::STA && _mode != WifiMode::APSTA)
         return;
-
     switch (event) {
         case ARDUINO_EVENT_WIFI_STA_CONNECTED:
             _state = WifiState::CONNECTING;
             break;
-
         case ARDUINO_EVENT_WIFI_STA_GOT_IP:
             _state = WifiState::CONNECTED;
             _reconnectAttempts = 0;
             break;
-
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
             _state = WifiState::DISCONNECTED;
             break;
-
         default:
             break;
     }
@@ -44,11 +40,8 @@ bool WifiController::_hasStationCredentials() const { return _stationCredentials
 bool WifiController::_hasAccessPointCredentials() const { return _accessPointCredentials.ssid[0] != '\0'; }
 
 void WifiController::_applyConfiguration() {
-    if (_hasStationCredentials()) {
-        _startStation();
-        return;
-    }
-    _startAccessPoint();
+    if (!_startStation())
+        _startAccessPoint();
 }
 
 void WifiController::_applyHostname() {
@@ -61,7 +54,6 @@ void WifiController::_applyIpConfig() {
         WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
         return;
     }
-
     WiFi.config(
         _cfg.staticIp.ip,
         _cfg.staticIp.gateway,
