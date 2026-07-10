@@ -1,8 +1,15 @@
 #ifndef ROBOT_COMMAND_H
 #define ROBOT_COMMAND_H
-#include <stdint.h>
+#include "../../../robot/RobotConfig.h"
 
-enum class RobotCommand : uint8_t { STATUS };
+enum class RobotCommand : uint8_t {
+    STATUS,
+    GET_CONFIG,
+    SET_CONFIG,
+    RESET_CONFIG
+};
 
-struct RobotCommandPayload {};
+struct RobotCommandPayload {
+    RobotConfig cfg;
+};
 #endif
