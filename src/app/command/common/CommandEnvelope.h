@@ -3,21 +3,24 @@
 #include "CommandDomain.h"
 #include "RobotCommand.h"
 #include "SystemCommand.h"
+#include "PowerCommand.h"
 #include "MotionCommand.h"
 #include "WifiCommand.h"
 
 struct CommandEnvelope {
     uint32_t id;
     CommandDomain domain;
-    union {
+    struct {
         RobotCommand robot;
         SystemCommand system;
+        PowerCommand power;
         MotionCommand motion;
         WifiCommand wifi;
     } command;
-    union {
+    struct {
         RobotCommandPayload robot;
         SystemCommandPayload system;
+        PowerCommandPayload power;
         MotionCommandPayload motion;
         WifiCommandPayload wifi;
     } payload;

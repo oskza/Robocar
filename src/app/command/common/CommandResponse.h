@@ -5,9 +5,8 @@
 #include "CommandResponseType.h"
 #include "CommandError.h"
 #include "../../../robot/RobotSnapshot.h"
-#include "../../../subsystems/system/SystemSnapshot.h"
-#include "../../../subsystems/motion/MotionSnapshot.h"
-#include "../../../subsystems/network/WifiSnapshot.h"
+#include "../../../robot/RobotConfig.h"
+#include "../../../subsystems/motion/MotionConfig.h"
 #include "../../../subsystems/network/WifiConfig.h"
 #include "../../../subsystems/network/WifiCredentials.h"
 
@@ -16,10 +15,13 @@ struct CommandResponse {
     CommandResponseStatus status;
     CommandResponseType type;
     CommandError error;
-    union {
+    struct {
         RobotSnapshot robot;
+        RobotConfig robotConfig;
         SystemSnapshot system;
+        PowerSnapshot power;
         MotionSnapshot motion;
+        MotionConfig motionConfig;
         WifiSnapshot wifi;
         WifiConfig wifiConfig;
         WifiCredentials wifiCredentials;
