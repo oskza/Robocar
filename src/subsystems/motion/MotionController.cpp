@@ -94,9 +94,9 @@ void MotionController::driveDistance(int16_t velocity, float meters) {
         stop();
         return;
     }
-    _odometry.reset();
     _clearTargets();
     _state = MotionState::DISTANCE;
+    _distance.startTicks = _odometry.getTicks();
     _distance.targetTicks = targetTicks;
     _differential.drive(velocity, 0);
 }

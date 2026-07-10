@@ -18,11 +18,16 @@ private:
     float _headingToleranceDegrees;
     struct TimedTarget {
         uint32_t endTimeMs = 0;
-        bool expired(uint32_t nowMs) const { return (int32_t)(nowMs - endTimeMs) >= 0; }
+        bool expired(uint32_t nowMs) const {
+            return (int32_t)(nowMs - endTimeMs) >= 0;
+        }
     } _timed;
     struct DistanceTarget {
+        uint32_t startTicks = 0;
         uint32_t targetTicks = 0;
-        bool reached(uint32_t ticks) const { return ticks >= targetTicks; }
+        bool reached(uint32_t currentTicks) const {
+            return (currentTicks - startTicks) >= targetTicks;
+        }
     } _distance;
     struct RotationTarget {
         float headingDegrees = 0.0f;
