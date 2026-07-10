@@ -11,7 +11,6 @@ enum class WifiCommand : uint8_t {
     SET_CONFIG,
     RESET_CONFIG,
 
-    GET_STATION_CREDENTIALS,
     SET_STATION_CREDENTIALS,
     RESET_STATION_CREDENTIALS,
 
@@ -23,9 +22,7 @@ enum class WifiCommand : uint8_t {
 };
 
 struct WifiCommandPayload {
-    union {
-        WifiConfig config;
-        WifiCredentials credentials;
-    };
+    WifiConfig cfg;
+    WifiCredentials credentials;
 };
 #endif
