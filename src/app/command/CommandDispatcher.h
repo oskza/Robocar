@@ -2,27 +2,13 @@
 #define COMMAND_DISPATCHER_H
 #include "common/CommandEnvelope.h"
 #include "common/CommandResponse.h"
-#include "handlers/RobotCommandHandler.h"
-#include "handlers/SystemCommandHandler.h"
-#include "handlers/MotionCommandHandler.h"
-#include "handlers/WifiCommandHandler.h"
+#include "../../robot/Robot.h"
 
 class CommandDispatcher {
 private:
-    RobotCommandHandler &_robot;
-    SystemCommandHandler &_system;
-    MotionCommandHandler &_motion;
-    WifiCommandHandler &_wifi;
-
+    Robot &_robot;
 public:
-    CommandDispatcher(
-        RobotCommandHandler &robot,
-        SystemCommandHandler &system,
-        MotionCommandHandler &motion,
-        WifiCommandHandler &wifi
-    );
-
+    explicit CommandDispatcher(Robot &robot);
     bool dispatch(const CommandEnvelope &command, CommandResponse &response);
 };
-
 #endif

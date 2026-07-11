@@ -1,55 +1,56 @@
 #include "CommandDispatcher.h"
+#include "CommandResponseBuilder.h"
+#include "handler/RobotCommandHandler.h"
+#include "handler/SystemCommandHandler.h"
+#include "handler/PowerCommandHandler.h"
+#include "handler/MotionCommandHandler.h"
+#include "handler/WifiCommandHandler.h"
 
-CommandDispatcher::CommandDispatcher(
-    RobotCommandHandler &robot,
-    SystemCommandHandler &system,
-    MotionCommandHandler &motion,
-    WifiCommandHandler &wifi
-)
-    : _robot(robot),
-      _system(system),
-      _motion(motion),
-      _wifi(wifi) {}
+CommandDispatcher::CommandDispatcher(Robot &robot) : _robot(robot) {}
 
-bool CommandDispatcher::dispatch(
-    const CommandEnvelope &command,
-    CommandResponse &response
-) {
+bool CommandDispatcher::dispatch(const CommandEnvelope &command, CommandResponse &response) {
     response.id = command.id;
-
     switch (command.domain) {
         case CommandDomain::ROBOT:
-            return _robot.execute(
+            return RobotCommandHandler::execute(
+                _robot,
                 command.command.robot,
                 command.payload.robot,
                 response
             );
 
         case CommandDomain::SYSTEM:
-            return _system.execute(
+            return SystemCommandHandler::execute(
+                _robot,
                 command.command.system,
                 command.payload.system,
                 response
             );
 
+        case CommandDomain::POWER:
+            return PowerCommandHandler::execute(
+                _robot,
+                command.command.power,
+                command.payload.power,
+                response
+            );
+
         case CommandDomain::MOTION:
-            return _motion.execute(
+            return MotionCommandHandler::execute(
+                _robot,
                 command.command.motion,
                 command.payload.motion,
                 response
             );
 
         case CommandDomain::WIFI:
-            return _wifi.execute(
+            return WifiCommandHandler::execute(
+                _robot,
                 command.command.wifi,
                 command.payload.wifi,
                 response
             );
     }
-
-    response.status = CommandResponseStatus::ERROR;
-    response.type = CommandResponseType::ERROR;
-    response.error = CommandError::INVALID_COMMAND;
-
+    CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
     return false;
 }
