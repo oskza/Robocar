@@ -2,14 +2,13 @@
 #define ROBOT_COMMAND_HANDLER_H
 #include "../common/RobotCommand.h"
 #include "../common/CommandResponse.h"
-#include "../../../App.h"
+#include "../../../robot/Robot.h"
+#include "../CommandResponseBuilder.h"
 
 class RobotCommandHandler {
-private:
-    App &_app;
 public:
-    explicit RobotCommandHandler(App &app);
-    bool execute(
+    static bool execute(
+        Robot &robot,
         RobotCommand command,
         const RobotCommandPayload &payload,
         CommandResponse &response
