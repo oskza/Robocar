@@ -10,13 +10,13 @@ struct MotionSnapshot {
         int16_t right;
     } output;
     struct {
-        float distanceMeters;
-        uint32_t averageTicks;
-    } odometry;
-    struct {
         float currentDegrees;
         float targetDegrees;
         float errorDegrees;
     } heading;
+    struct {
+        float distanceMeters;
+        uint32_t averageTicks;
+    } odometry;
 };
 #endif

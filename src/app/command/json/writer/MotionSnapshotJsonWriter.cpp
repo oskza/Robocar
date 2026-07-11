@@ -15,14 +15,16 @@ void MotionSnapshotJsonWriter::write(JsonObject json, const MotionSnapshot &snap
     json["state"] = _stateToString(snapshot.state);
     json["stopped"] = snapshot.stopped;
 
-    JsonObject heading = json["heading"].to<JsonObject>();
-    heading["currentDegrees"] = snapshot.heading.currentDegrees;
-    heading["targetDegrees"] = snapshot.heading.targetDegrees;
-    heading["errorDegrees"] = snapshot.heading.errorDegrees;
-
     JsonObject output = json["output"].to<JsonObject>();
     output["left"] = snapshot.output.left;
     output["right"] = snapshot.output.right;
+
+    JsonObject heading = json["heading"].to<JsonObject>();
+    heading["currentDegrees"] = snapshot.heading.currentDegrees;
+    if (snapshot.state != MotionState::ROTATING)
+        return;
+    heading["targetDegrees"] = snapshot.heading.targetDegrees;
+    heading["errorDegrees"] = snapshot.heading.errorDegrees;
 
     JsonObject odometry = json["odometry"].to<JsonObject>();
     odometry["distanceMeters"] = snapshot.odometry.distanceMeters;
