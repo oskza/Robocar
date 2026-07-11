@@ -10,6 +10,7 @@ public:
     explicit PowerController(Ina226PowerMonitor &monitor);
     bool begin(float maxCurrentAmps, float shuntOhms);
     bool isConnected() const;
+    bool hasPower() const;
     PowerSnapshot getSnapshot() const;
 };
 #endif

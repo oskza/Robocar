@@ -2,7 +2,12 @@
 
 void PowerSnapshotJsonWriter::write(JsonObject json, const PowerSnapshot &snapshot) {
     json["connected"] = snapshot.connected;
-    json["busVoltage"] = snapshot.busVoltage;
-    json["currentMilliamps"] = snapshot.currentMilliamps;
-    json["powerMilliwatts"] = snapshot.powerMilliwatts;
+    if (!snapshot.connected)
+        return;
+    json["hasPower"] = snapshot.hasPower;
+    json["volts"] = snapshot.volts;
+    if (!snapshot.hasPower)
+        return;
+    json["milliamps"] = snapshot.milliamps;
+    json["milliwatts"] = snapshot.milliwatts;
 }
