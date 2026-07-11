@@ -12,10 +12,7 @@ bool MotionCommandHandler::execute(
             return true;
         case MotionCommand::GET_CONFIG: {
             MotionConfig cfg{};
-            if (!robot.getMotionConfig(cfg)) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.getMotionConfig(cfg);
             CommandResponseBuilder::config(response, cfg);
             return true;
         }
@@ -27,7 +24,7 @@ bool MotionCommandHandler::execute(
             CommandResponseBuilder::ack(response);
             return true;
         case MotionCommand::RESET_CONFIG:
-            if (!robot.resetWifiConfig()) {
+            if (!robot.resetMotion()) {
                 CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
                 return false;
             }
@@ -35,6 +32,10 @@ bool MotionCommandHandler::execute(
             return true;
         case MotionCommand::STOP:
             robot.stop();
+            CommandResponseBuilder::ack(response);
+            return true;
+        case MotionCommand::BRAKE:
+            robot.brake();
             CommandResponseBuilder::ack(response);
             return true;
         case MotionCommand::DRIVE:

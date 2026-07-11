@@ -4,8 +4,8 @@ MotionController::MotionController(DifferentialDrive &differential, Odometry &od
     : _differential(differential),
       _odometry(odometry),
       _compass(compass),
-      _state(MotionState::IDLE),
-      _headingToleranceDegrees(2.0f) {}
+      _cfg{},
+      _state(MotionState::IDLE) {}
 
 void MotionController::_clearTargets() {
     _timed = {};
@@ -19,7 +19,7 @@ void MotionController::_updateRotation() {
         return;
     }
     const float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.headingDegrees);
-    if (fabsf(diff) <= _headingToleranceDegrees) {
+    if (fabsf(diff) <= _cfg.headingToleranceDegrees) {
         brake();
         return;
     }
@@ -28,43 +28,25 @@ void MotionController::_updateRotation() {
 }
 
 void MotionController::begin(const MotionConfig &cfg, uint32_t pwmFrequency, uint8_t encoderSlots) {
+    _cfg = cfg;
+
     _differential.begin(
-        cfg.wheelAcceleration,
+        _cfg.wheelAcceleration,
         pwmFrequency,
-        cfg.motorLeftMinPwm,
-        cfg.motorRightMinPwm
+        _cfg.motorLeftMinPwm,
+        _cfg.motorRightMinPwm
     );
 
     _odometry.begin(
         encoderSlots,
-        cfg.wheelDiameterMeters,
-        cfg.wheelCircumferenceFactor
+        _cfg.wheelDiameterMeters,
+        _cfg.wheelCircumferenceFactor
     );
 
     if (!_compass.begin()) {}
 
-    _headingToleranceDegrees = cfg.headingToleranceDegrees;
-
     _clearTargets();
     _state = MotionState::IDLE;
-}
-
-MotionState MotionController::getState() const { return _state; }
-
-MotionSnapshot MotionController::getSnapshot() const {
-    MotionSnapshot snapshot{};
-    snapshot.state = _state;
-    snapshot.stopped = isStopped();
-    snapshot.heading.currentDegrees = _compass.getHeadingDegrees();
-    snapshot.heading.targetDegrees = _rotation.headingDegrees;
-    snapshot.heading.errorDegrees = (_state == MotionState::ROTATING)
-        ? AngleMath::differenceDegrees(snapshot.heading.targetDegrees, snapshot.heading.currentDegrees)
-        : 0.0f;
-    snapshot.output.left = _differential.getLeftOutput();
-    snapshot.output.right = _differential.getRightOutput();
-    snapshot.odometry.distanceMeters = _odometry.getMeters();
-    snapshot.odometry.averageTicks = _odometry.getTicks();
-    return snapshot;
 }
 
 void MotionController::drive(int16_t velocity, int16_t turn) {
@@ -149,3 +131,25 @@ void MotionController::brake() {
 }
 
 bool MotionController::isStopped() const { return _state == MotionState::IDLE && _differential.isStopped(); }
+
+MotionState MotionController::getState() const { return _state; }
+
+MotionSnapshot MotionController::getSnapshot() const {
+    MotionSnapshot snapshot{};
+    snapshot.state = _state;
+    snapshot.stopped = isStopped();
+    snapshot.heading.currentDegrees = _compass.getHeadingDegrees();
+    snapshot.heading.targetDegrees = _rotation.headingDegrees;
+    snapshot.heading.errorDegrees = (_state == MotionState::ROTATING)
+        ? AngleMath::differenceDegrees(snapshot.heading.targetDegrees, snapshot.heading.currentDegrees)
+        : 0.0f;
+    snapshot.output.left = _differential.getLeftOutput();
+    snapshot.output.right = _differential.getRightOutput();
+    snapshot.odometry.distanceMeters = _odometry.getMeters();
+    snapshot.odometry.averageTicks = _odometry.getTicks();
+    return snapshot;
+}
+
+void MotionController::getConfig(MotionConfig &cfg) const { cfg = _cfg; }
+
+bool MotionController::setConfig(const MotionConfig &cfg) { _cfg = cfg; }

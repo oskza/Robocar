@@ -36,13 +36,15 @@ public:
         const WifiCredentials &accessPointCredentials
     );
     void update(uint32_t nowMs);
-    void setConfig(const WifiConfig &cfg);
-    void setStationCredentials(const WifiCredentials &credentials);
-    void setAccessPointCredentials(const WifiCredentials &credentials);
     void disconnect();
     bool isConnected() const;
     bool isAccessPointActive() const;
     const char *getHostname() const;
     WifiSnapshot getSnapshot() const;
+    void getConfig(WifiConfig &cfg) const;
+    void setConfig(const WifiConfig &cfg);
+    void setStationCredentials(const WifiCredentials &credentials);
+    void getAccessPointCredentials(WifiCredentials &credentials) const;
+    void setAccessPointCredentials(const WifiCredentials &credentials);
 };
 #endif

@@ -67,10 +67,7 @@ RobotSnapshot Robot::getSnapshot() const {
     return snapshot;
 }
 
-bool Robot::getConfig(RobotConfig &cfg) const {
-    cfg = _cfg;
-    return true;
-}
+void Robot::getConfig(RobotConfig &cfg) const { cfg = _cfg; }
 
 bool Robot::setConfig(const RobotConfig &cfg) {
     if (!_storage.saveConfig(cfg))
@@ -79,10 +76,9 @@ bool Robot::setConfig(const RobotConfig &cfg) {
     return true;
 }
 
-bool Robot::resetConfig() {
-    if (!_storage.resetConfig())
-        return false;
-    return _storage.loadConfig(_cfg);
+void Robot::resetConfig() {
+    _storage.resetConfig();
+    _storage.loadConfig(_cfg);
 }
 
 SystemSnapshot Robot::getSystemSnapshot() const { return _system.getSnapshot(); }
@@ -97,13 +93,18 @@ PowerSnapshot Robot::getPowerSnapshot() const { return _power.getSnapshot(); }
 
 MotionSnapshot Robot::getMotionSnapshot() const { return _motion.getSnapshot(); }
 
-bool Robot::getMotionConfig(MotionConfig &cfg) const { return _motionStorage.loadConfig(cfg); }
+void Robot::getMotionConfig(MotionConfig &cfg) const { _motion.getConfig(cfg); }
 
-/** TODO: apply config */
-bool Robot::setMotionConfig(const MotionConfig &cfg) { return _motionStorage.saveConfig(cfg); }
+bool Robot::setMotionConfig(const MotionConfig &cfg) {
+    return _motionStorage.saveConfig(cfg) && _motion.setConfig(cfg);
+}
 
-/** TODO: apply config */
-bool Robot::resetMotion() { return _motionStorage.resetConfig(); }
+void Robot::resetMotion() {
+    _motionStorage.resetConfig();
+    MotionConfig cfg;
+    _motionStorage.loadConfig(cfg);
+    _motion.setConfig(cfg);
+}
 
 void Robot::stop() { _motion.stop(); }
 
@@ -121,7 +122,7 @@ void Robot::rotateBy(float degrees, uint8_t speed) { _motion.rotateBy(degrees, s
 
 WifiSnapshot Robot::getWifiSnapshot() const { return _wifi.getSnapshot(); }
 
-bool Robot::getWifiConfig(WifiConfig &cfg) const { return _wifiStorage.loadConfig(cfg); }
+void Robot::getWifiConfig(WifiConfig &cfg) const { _wifi.getConfig(cfg); }
 
 bool Robot::setWifiConfig(const WifiConfig &cfg) {
     if (!_wifiStorage.saveConfig(cfg))
@@ -130,13 +131,11 @@ bool Robot::setWifiConfig(const WifiConfig &cfg) {
     return true;
 }
 
-bool Robot::resetWifiConfig() {
-    if (!_wifiStorage.resetConfig())
-        return false;
+void Robot::resetWifiConfig() {
+    _wifiStorage.resetConfig();
     WifiConfig cfg{};
     _wifiStorage.loadConfig(cfg);
     _wifi.setConfig(cfg);
-    return true;
 }
 
 bool Robot::setStationCredentials(const WifiCredentials &credentials) {
@@ -146,16 +145,14 @@ bool Robot::setStationCredentials(const WifiCredentials &credentials) {
     return true;
 }
 
-bool Robot::resetStationCredentials() {
-    if (!_wifiStorage.resetStationCredentials())
-        return false;
+void Robot::resetStationCredentials() {
+    _wifiStorage.resetStationCredentials();
     WifiCredentials credentials{};
     _wifiStorage.loadStationCredentials(credentials);
     _wifi.setStationCredentials(credentials);
-    return true;
 }
 
-bool Robot::getAccessPointCredentials(WifiCredentials &credentials) const { return _wifiStorage.loadAccessPointCredentials(credentials); }
+void Robot::getAccessPointCredentials(WifiCredentials &credentials) const { _wifi.getAccessPointCredentials(credentials); }
 
 bool Robot::setAccessPointCredentials(const WifiCredentials &credentials) {
     if (!_wifiStorage.saveAccessPointCredentials(credentials))
@@ -164,18 +161,15 @@ bool Robot::setAccessPointCredentials(const WifiCredentials &credentials) {
     return true;
 }
 
-bool Robot::resetAccessPointCredentials() {
-    if (!_wifiStorage.resetAccessPointCredentials())
-        return false;
+void Robot::resetAccessPointCredentials() {
+    _wifiStorage.resetAccessPointCredentials();
     WifiCredentials credentials{};
     _wifiStorage.loadAccessPointCredentials(credentials);
     _wifi.setAccessPointCredentials(credentials);
-    return true;
 }
 
-bool Robot::resetWifi() {
-    if (!_wifiStorage.resetAll())
-        return false;
+void Robot::resetWifi() {
+    _wifiStorage.resetAll();
 
     WifiConfig cfg{};
     WifiCredentials station{};
@@ -186,6 +180,4 @@ bool Robot::resetWifi() {
     _wifiStorage.loadAccessPointCredentials(accessPoint);
 
     _wifi.begin(cfg, station, accessPoint);
-
-    return true;
 }

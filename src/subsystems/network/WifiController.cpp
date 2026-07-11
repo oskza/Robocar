@@ -170,22 +170,6 @@ void WifiController::update(uint32_t nowMs) {
     _startStation();
 }
 
-void WifiController::setConfig(const WifiConfig &cfg) {
-    _cfg = cfg;
-    _applyConfiguration();
-}
-
-void WifiController::setStationCredentials(const WifiCredentials &credentials) {
-    _stationCredentials = credentials;
-    _applyConfiguration();
-}
-
-void WifiController::setAccessPointCredentials(const WifiCredentials &credentials) {
-    _accessPointCredentials = credentials;
-    if (_mode == WifiMode::AP)
-        _applyConfiguration();
-}
-
 void WifiController::disconnect() {
     _stopStation();
     _stopAccessPoint();
@@ -229,4 +213,26 @@ WifiSnapshot WifiController::getSnapshot() const {
         );
     }
     return snapshot;
+}
+
+void WifiController::getConfig(WifiConfig &cfg) const { cfg = _cfg; }
+
+void WifiController::setConfig(const WifiConfig &cfg) {
+    _cfg = cfg;
+    _applyConfiguration();
+}
+
+void WifiController::setStationCredentials(const WifiCredentials &credentials) {
+    _stationCredentials = credentials;
+    _applyConfiguration();
+}
+
+void WifiController::getAccessPointCredentials(WifiCredentials &credentials) const {
+    credentials = _accessPointCredentials;
+}
+
+void WifiController::setAccessPointCredentials(const WifiCredentials &credentials) {
+    _accessPointCredentials = credentials;
+    if (_mode == WifiMode::AP)
+        _applyConfiguration();
 }

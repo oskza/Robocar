@@ -8,6 +8,7 @@ enum class MotionCommand : uint8_t {
     SET_CONFIG,
     RESET_CONFIG,
     STOP,
+    BRAKE,
     DRIVE,
     DRIVE_FOR,
     DRIVE_DISTANCE,

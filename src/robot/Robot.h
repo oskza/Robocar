@@ -42,9 +42,9 @@ public:
     void update();
 
     RobotSnapshot getSnapshot() const;
-    bool getConfig(RobotConfig &cfg) const;
+    void getConfig(RobotConfig &cfg) const;
     bool setConfig(const RobotConfig &cfg);
-    bool resetConfig();
+    void resetConfig();
 
     SystemSnapshot getSystemSnapshot() const;
     uint32_t getUptimeMs() const;
@@ -54,9 +54,9 @@ public:
     PowerSnapshot getPowerSnapshot() const;
 
     MotionSnapshot getMotionSnapshot() const;
-    bool getMotionConfig(MotionConfig &cfg) const;
+    void getMotionConfig(MotionConfig &cfg) const;
     bool setMotionConfig(const MotionConfig &cfg);
-    bool resetMotion();
+    void resetMotion();
     void stop();
     void brake();
     void drive(int16_t velocity, int16_t turn);
@@ -66,14 +66,14 @@ public:
     void rotateBy(float degrees, uint8_t speed);
 
     WifiSnapshot getWifiSnapshot() const;
-    bool getWifiConfig(WifiConfig &cfg) const;
+    void getWifiConfig(WifiConfig &cfg) const;
     bool setWifiConfig(const WifiConfig &cfg);
-    bool resetWifiConfig();
+    void resetWifiConfig();
     bool setStationCredentials(const WifiCredentials &credentials);
-    bool resetStationCredentials();
-    bool getAccessPointCredentials(WifiCredentials &credentials) const;
+    void resetStationCredentials();
+    void getAccessPointCredentials(WifiCredentials &credentials) const;
     bool setAccessPointCredentials(const WifiCredentials &credentials);
-    bool resetAccessPointCredentials();
-    bool resetWifi();
+    void resetAccessPointCredentials();
+    void resetWifi();
 };
 #endif

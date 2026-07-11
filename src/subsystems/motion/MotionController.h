@@ -14,8 +14,8 @@ private:
     DifferentialDrive &_differential;
     Odometry &_odometry;
     Bmm150Compass &_compass;
+    MotionConfig _cfg;
     MotionState _state;
-    float _headingToleranceDegrees;
     struct TimedTarget {
         uint32_t endTimeMs = 0;
         bool expired(uint32_t nowMs) const {
@@ -49,5 +49,7 @@ public:
     bool isStopped() const;
     MotionState getState() const;
     MotionSnapshot getSnapshot() const;
+    void getConfig(MotionConfig &cfg) const;
+    bool setConfig(const MotionConfig &cfg);
 };
 #endif
