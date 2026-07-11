@@ -13,10 +13,7 @@ bool WifiCommandHandler::execute(
 
         case WifiCommand::GET_CONFIG: {
             WifiConfig cfg{};
-            if (!robot.getWifiConfig(cfg)) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.getWifiConfig(cfg);
             CommandResponseBuilder::config(response, cfg);
             return true;
         }
@@ -30,10 +27,7 @@ bool WifiCommandHandler::execute(
             return true;
 
         case WifiCommand::RESET_CONFIG:
-            if (!robot.resetWifiConfig()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetWifiConfig();
             CommandResponseBuilder::ack(response);
             return true;
 
@@ -46,19 +40,13 @@ bool WifiCommandHandler::execute(
             return true;
 
         case WifiCommand::RESET_STATION_CREDENTIALS:
-            if (!robot.resetStationCredentials()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetStationCredentials();
             CommandResponseBuilder::ack(response);
             return true;
 
         case WifiCommand::GET_ACCESS_POINT_CREDENTIALS: {
             WifiCredentials credentials{};
-            if (!robot.getAccessPointCredentials(credentials)) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.getAccessPointCredentials(credentials);
             CommandResponseBuilder::credentials(response, credentials, true);
             return true;
         }
@@ -72,18 +60,12 @@ bool WifiCommandHandler::execute(
             return true;
 
         case WifiCommand::RESET_ACCESS_POINT_CREDENTIALS:
-            if (!robot.resetAccessPointCredentials()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetAccessPointCredentials();
             CommandResponseBuilder::ack(response);
             return true;
 
         case WifiCommand::RESET_ALL:
-            if (!robot.resetWifi()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetWifi();
             CommandResponseBuilder::ack(response);
             return true;
     }

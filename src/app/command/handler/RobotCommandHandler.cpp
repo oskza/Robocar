@@ -13,10 +13,7 @@ bool RobotCommandHandler::execute(
             return true;
         case RobotCommand::GET_CONFIG: {
             RobotConfig cfg{};
-            if (!robot.getConfig(cfg)) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.getConfig(cfg);
             CommandResponseBuilder::config(response, cfg);
             return true;
         }
@@ -28,10 +25,7 @@ bool RobotCommandHandler::execute(
             CommandResponseBuilder::ack(response);
             return true;
         case RobotCommand::RESET_CONFIG:
-            if (!robot.resetConfig()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetConfig();
             CommandResponseBuilder::ack(response);
             return true;
     }

@@ -24,10 +24,7 @@ bool MotionCommandHandler::execute(
             CommandResponseBuilder::ack(response);
             return true;
         case MotionCommand::RESET_CONFIG:
-            if (!robot.resetMotion()) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
-            }
+            robot.resetMotion();
             CommandResponseBuilder::ack(response);
             return true;
         case MotionCommand::STOP:
