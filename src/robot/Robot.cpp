@@ -99,19 +99,11 @@ MotionSnapshot Robot::getMotionSnapshot() const { return _motion.getSnapshot(); 
 
 bool Robot::getMotionConfig(MotionConfig &cfg) const { return _motionStorage.loadConfig(cfg); }
 
-bool Robot::setMotionConfig(const MotionConfig &cfg) {
-    if (!_motionStorage.saveConfig(cfg))
-        return false;
-    // TODO: Re-apply motion config safely without full subsystem restart.
-    return true;
-}
+/** TODO: apply config */
+bool Robot::setMotionConfig(const MotionConfig &cfg) { return _motionStorage.saveConfig(cfg); }
 
-bool Robot::resetMotion() {
-    if (!_motionStorage.resetConfig())
-        return false;
-    // TODO: Re-apply motion defaults safely without full subsystem restart.
-    return true;
-}
+/** TODO: apply config */
+bool Robot::resetMotion() { return _motionStorage.resetConfig(); }
 
 void Robot::stop() { _motion.stop(); }
 
@@ -147,14 +139,14 @@ bool Robot::resetWifiConfig() {
     return true;
 }
 
-bool Robot::setWifiCredentials(const WifiCredentials &credentials) {
+bool Robot::setStationCredentials(const WifiCredentials &credentials) {
     if (!_wifiStorage.saveStationCredentials(credentials))
         return false;
     _wifi.setStationCredentials(credentials);
     return true;
 }
 
-bool Robot::resetWifiCredentials() {
+bool Robot::resetStationCredentials() {
     if (!_wifiStorage.resetStationCredentials())
         return false;
     WifiCredentials credentials{};

@@ -69,8 +69,8 @@ public:
     bool getWifiConfig(WifiConfig &cfg) const;
     bool setWifiConfig(const WifiConfig &cfg);
     bool resetWifiConfig();
-    bool setWifiCredentials(const WifiCredentials &credentials);
-    bool resetWifiCredentials();
+    bool setStationCredentials(const WifiCredentials &credentials);
+    bool resetStationCredentials();
     bool getAccessPointCredentials(WifiCredentials &credentials) const;
     bool setAccessPointCredentials(const WifiCredentials &credentials);
     bool resetAccessPointCredentials();
