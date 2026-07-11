@@ -11,7 +11,8 @@ private:
     WifiCredentials _stationCredentials;
     WifiCredentials _accessPointCredentials;
     WifiMode _mode;
-    WifiState _state;
+    WifiStationState _stationState;
+    WifiAccessPointState _accessPointState;
     uint32_t _lastReconnectMs;
     uint32_t _reconnectAttempts;
     static WifiController *_instance;
@@ -19,6 +20,7 @@ private:
     void _handleWifiEvent(WiFiEvent_t event);
     bool _hasStationCredentials() const;
     bool _hasAccessPointCredentials() const;
+    bool _applyMode(WifiMode mode);
     void _applyConfiguration();
     void _applyHostname();
     void _applyIpConfig();
