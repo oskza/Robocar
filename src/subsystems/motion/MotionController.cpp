@@ -152,4 +152,4 @@ MotionSnapshot MotionController::getSnapshot() const {
 
 void MotionController::getConfig(MotionConfig &cfg) const { cfg = _cfg; }
 
-bool MotionController::setConfig(const MotionConfig &cfg) { _cfg = cfg; }
+void MotionController::setConfig(const MotionConfig &cfg) { _cfg = cfg; }

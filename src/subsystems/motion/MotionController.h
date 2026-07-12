@@ -50,6 +50,6 @@ public:
     MotionState getState() const;
     MotionSnapshot getSnapshot() const;
     void getConfig(MotionConfig &cfg) const;
-    bool setConfig(const MotionConfig &cfg);
+    void setConfig(const MotionConfig &cfg);
 };
 #endif
