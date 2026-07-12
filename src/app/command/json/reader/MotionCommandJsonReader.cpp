@@ -1,98 +1,77 @@
 #include "MotionCommandJsonReader.h"
-
 #include <string.h>
 #include "../JsonValueReader.h"
 
+bool MotionCommandJsonReader::_readConfig(JsonVariantConst &payload, MotionConfig &cfg) {
+    return JsonValueReader::readFloat(payload["wheelDiameterMeters"], cfg.wheelDiameterMeters)
+        && JsonValueReader::readFloat(payload["wheelCircumferenceFactor"], cfg.wheelCircumferenceFactor)
+        && JsonValueReader::readUint8(payload["wheelAcceleration"], cfg.wheelAcceleration)
+        && JsonValueReader::readUint8(payload["motorLeftMinPwm"], cfg.motorLeftMinPwm)
+        && JsonValueReader::readUint8(payload["motorRightMinPwm"], cfg.motorRightMinPwm)
+        && JsonValueReader::readFloat(payload["headingToleranceDegrees"], cfg.headingToleranceDegrees);
+}
+
 bool MotionCommandJsonReader::read(JsonObjectConst json, CommandEnvelope &command) {
-    JsonVariantConst commandValue = json["command"];
-
-    if (!commandValue.is<const char *>())
+    JsonVariantConst cmdVal = json["command"];
+    if (!cmdVal.is<const char*>())
         return false;
-
-    const char *cmd = commandValue.as<const char *>();
-
+    const char *cmdStr = cmdVal.as<const char*>();
     command.domain = CommandDomain::MOTION;
-
-    JsonVariantConst payload = json["payload"];
-
-    if (strcmp(cmd, "status") == 0) {
+    if (strcmp(cmdStr, "status") == 0) {
         command.command.motion = MotionCommand::STATUS;
         return true;
     }
-
-    if (strcmp(cmd, "stop") == 0) {
+    if (strcmp(cmdStr, "getConfig") == 0) {
+        command.command.motion = MotionCommand::GET_CONFIG;
+        return true;
+    }
+    if (strcmp(cmdStr, "setConfig") == 0) {
+        command.command.motion = MotionCommand::SET_CONFIG;
+        JsonVariantConst payload = json["payload"];
+        return _readConfig(payload, command.payload.motion.cfg);
+    }
+    if (strcmp(cmdStr, "reset") == 0) {
+        command.command.motion = MotionCommand::RESET_CONFIG;
+        return true;
+    }
+    if (strcmp(cmdStr, "stop") == 0) {
         command.command.motion = MotionCommand::STOP;
         return true;
     }
-
-    if (strcmp(cmd, "drive") == 0) {
+    if (strcmp(cmdStr, "brake") == 0) {
+        command.command.motion = MotionCommand::BRAKE;
+        return true;
+    }
+    if (strcmp(cmdStr, "drive") == 0) {
         command.command.motion = MotionCommand::DRIVE;
-
-        return JsonValueReader::readInt16(
-                payload["velocity"],
-                command.payload.motion.drive.velocity
-            )
-            && JsonValueReader::readInt16(
-                payload["turn"],
-                command.payload.motion.drive.turn
-            );
+        JsonVariantConst payload = json["payload"];
+        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.drive.velocity)
+            && JsonValueReader::readInt16(payload["turn"], command.payload.motion.drive.turn);
     }
-
-    if (strcmp(cmd, "driveFor") == 0) {
+    if (strcmp(cmdStr, "driveFor") == 0) {
         command.command.motion = MotionCommand::DRIVE_FOR;
-
-        return JsonValueReader::readInt16(
-                payload["velocity"],
-                command.payload.motion.driveFor.velocity
-            )
-            && JsonValueReader::readInt16(
-                payload["turn"],
-                command.payload.motion.driveFor.turn
-            )
-            && JsonValueReader::readUint32(
-                payload["durationMs"],
-                command.payload.motion.driveFor.durationMs
-            );
+        JsonVariantConst payload = json["payload"];
+        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.driveFor.velocity)
+            && JsonValueReader::readInt16(payload["turn"], command.payload.motion.driveFor.turn)
+            && JsonValueReader::readUint32(payload["durationMs"], command.payload.motion.driveFor.durationMs);
     }
-
-    if (strcmp(cmd, "driveDistance") == 0) {
+    if (strcmp(cmdStr, "driveDistance") == 0) {
         command.command.motion = MotionCommand::DRIVE_DISTANCE;
-
-        return JsonValueReader::readInt16(
-                payload["velocity"],
-                command.payload.motion.driveDistance.velocity
-            )
-            && JsonValueReader::readFloat(
-                payload["distanceMeters"],
-                command.payload.motion.driveDistance.distanceMeters
-            );
+        JsonVariantConst payload = json["payload"];
+        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.driveDistance.velocity)
+            && JsonValueReader::readFloat(payload["distanceMeters"], command.payload.motion.driveDistance.distanceMeters);
     }
-
-    if (strcmp(cmd, "rotateTo") == 0) {
+    if (strcmp(cmdStr, "rotateTo") == 0) {
         command.command.motion = MotionCommand::ROTATE_TO;
-
-        return JsonValueReader::readFloat(
-                payload["angleDegrees"],
-                command.payload.motion.rotate.angleDegrees
-            )
-            && JsonValueReader::readUint8(
-                payload["speed"],
-                command.payload.motion.rotate.speed
-            );
+        JsonVariantConst payload = json["payload"];
+        return JsonValueReader::readFloat(payload["angleDegrees"], command.payload.motion.rotate.angleDegrees)
+            && JsonValueReader::readUint8(payload["speed"], command.payload.motion.rotate.speed);
     }
-
-    if (strcmp(cmd, "rotateBy") == 0) {
+    if (strcmp(cmdStr, "rotateBy") == 0) {
         command.command.motion = MotionCommand::ROTATE_BY;
-
-        return JsonValueReader::readFloat(
-                payload["angleDegrees"],
-                command.payload.motion.rotate.angleDegrees
-            )
-            && JsonValueReader::readUint8(
-                payload["speed"],
-                command.payload.motion.rotate.speed
-            );
+        JsonVariantConst payload = json["payload"];
+        return JsonValueReader::readFloat(payload["angleDegrees"], command.payload.motion.rotate.angleDegrees)
+            && JsonValueReader::readUint8(payload["speed"], command.payload.motion.rotate.speed);
     }
-
     return false;
 }

@@ -4,6 +4,9 @@
 #include "../../common/CommandEnvelope.h"
 
 class WifiCommandJsonReader {
+private:
+    static bool _readConfig(JsonVariantConst &payload, WifiConfig &cfg);
+    static bool _readCredentials(JsonVariantConst &payload, WifiCredentials &creds);
 public:
     static bool read(JsonObjectConst json, CommandEnvelope &command);
 };

@@ -4,10 +4,9 @@
 #include "../../common/CommandEnvelope.h"
 
 class RobotCommandJsonReader {
+private:
+    static bool _readConfig(JsonVariantConst &payload, RobotConfig &cfg);
 public:
-    static bool read(
-        JsonObjectConst json,
-        CommandEnvelope &command
-    );
+    static bool read(JsonObjectConst json, CommandEnvelope &command);
 };
 #endif

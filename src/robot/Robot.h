@@ -14,8 +14,8 @@ private:
     SystemController &_system;
     PowerController &_power;
     WifiController &_wifi;
-    WifiStorage &_wifiStorage;
     MotionController &_motion;
+    WifiStorage &_wifiStorage;
     MotionStorage &_motionStorage;
     RobotStorage &_storage;
     RobotConfig _cfg;
@@ -26,8 +26,8 @@ public:
         SystemController &system,
         PowerController &power,
         WifiController &wifi,
-        WifiStorage &wifiStorage,
         MotionController &motion,
+        WifiStorage &wifiStorage,
         MotionStorage &motionStorage,
         RobotStorage &storage
     );
@@ -40,6 +40,8 @@ public:
     );
 
     void update();
+
+    bool isTelemetryEnabled();
 
     RobotSnapshot getSnapshot() const;
     void getConfig(RobotConfig &cfg) const;
@@ -66,6 +68,7 @@ public:
     void rotateBy(float degrees, uint8_t speed);
 
     WifiSnapshot getWifiSnapshot() const;
+    const char *getHostname() const;
     void getWifiConfig(WifiConfig &cfg) const;
     bool setWifiConfig(const WifiConfig &cfg);
     void resetWifiConfig();

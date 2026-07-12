@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 struct RobotConfig {
+    bool telemetryEnabled;
     uint32_t motionUpdateIntervalMs;
     uint32_t wifiUpdateIntervalMs;
 };

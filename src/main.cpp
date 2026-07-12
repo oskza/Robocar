@@ -24,7 +24,6 @@ Ina226PowerMonitor powerMonitor(INA226_ADDRESS);
 PowerController powerController(powerMonitor);
 
 WifiController wifiController;
-WifiStorage wifiStorage;
 
 MotorDriver leftMotor(
     MOTOR_L_PWM_PIN,
@@ -54,16 +53,16 @@ Bmm150Compass compass;
 
 MotionController motionController(differential, odometry, compass);
 
+WifiStorage wifiStorage;
 MotionStorage motionStorage;
-
 RobotStorage robotStorage;
 
 Robot robot(
     systemController,
     powerController,
     wifiController,
-    wifiStorage,
     motionController,
+    wifiStorage,
     motionStorage,
     robotStorage
 );
@@ -81,37 +80,23 @@ void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
 
 void setup() {
-    Serial.begin(MONITOR_SPEED);
-    delay(500);
-
     leftEncoder.begin(onLeftEncoder);
     rightEncoder.begin(onRightEncoder);
-
     robot.begin(
         MOTOR_PWM_FREQ,
         ENCODER_SLOTS,
         INA226_MAX_CURRENT_AMPS,
         INA226_SHUNT_OHMS
     );
-
-    ArduinoOTA.setHostname(wifiController.getHostname());
+    ArduinoOTA.setHostname(robot.getHostname());
     ArduinoOTA.begin();
-
     webSocketService.begin();
 }
 
 void loop() {
     ArduinoOTA.handle();
-
     robot.update();
-
     webSocketService.update();
-
-    telemetryService.update(robot.getUptimeMs());
-
-    static bool printed = false;
-    if (!printed && wifiController.isConnected()) {
-        printed = true;
-        Serial.println(wifiController.getSnapshot().station.ip);
-    }
+    if (robot.isTelemetryEnabled())
+        telemetryService.update(robot.getUptimeMs());
 }

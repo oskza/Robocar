@@ -5,8 +5,9 @@
 #include "../../common/CommandEnvelope.h"
 
 class MotionCommandJsonReader {
+private:
+    static bool _readConfig(JsonVariantConst &payload, MotionConfig &cfg);
 public:
     static bool read(JsonObjectConst json, CommandEnvelope &command);
 };
-
 #endif

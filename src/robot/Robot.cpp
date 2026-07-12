@@ -4,16 +4,16 @@ Robot::Robot(
     SystemController &system,
     PowerController &power,
     WifiController &wifi,
-    WifiStorage &wifiStorage,
     MotionController &motion,
+    WifiStorage &wifiStorage,
     MotionStorage &motionStorage,
     RobotStorage &storage
 )
     : _system(system),
         _power(power),
         _wifi(wifi),
-        _wifiStorage(wifiStorage),
         _motion(motion),
+        _wifiStorage(wifiStorage),
         _motionStorage(motionStorage),
         _storage(storage),
         _cfg{},
@@ -58,6 +58,8 @@ void Robot::update() {
     }
 }
 
+bool Robot::isTelemetryEnabled() { return _cfg.telemetryEnabled; }
+
 RobotSnapshot Robot::getSnapshot() const {
     RobotSnapshot snapshot{};
     snapshot.system = _system.getSnapshot();
@@ -96,7 +98,10 @@ MotionSnapshot Robot::getMotionSnapshot() const { return _motion.getSnapshot(); 
 void Robot::getMotionConfig(MotionConfig &cfg) const { _motion.getConfig(cfg); }
 
 bool Robot::setMotionConfig(const MotionConfig &cfg) {
-    return _motionStorage.saveConfig(cfg) && _motion.setConfig(cfg);
+    if (!_motionStorage.saveConfig(cfg))
+        return false;
+    _motion.setConfig(cfg);
+    return true;
 }
 
 void Robot::resetMotion() {
@@ -121,6 +126,8 @@ void Robot::rotateTo(float headingDegrees, uint8_t speed) { _motion.rotateTo(hea
 void Robot::rotateBy(float degrees, uint8_t speed) { _motion.rotateBy(degrees, speed); }
 
 WifiSnapshot Robot::getWifiSnapshot() const { return _wifi.getSnapshot(); }
+
+const char* Robot::getHostname() const { return _wifi.getHostname(); }
 
 void Robot::getWifiConfig(WifiConfig &cfg) const { _wifi.getConfig(cfg); }
 
