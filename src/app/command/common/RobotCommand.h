@@ -6,7 +6,9 @@ enum class RobotCommand : uint8_t {
     STATUS,
     GET_CONFIG,
     SET_CONFIG,
-    RESET_CONFIG
+    RESET_CONFIG,
+    ENABLE_TELEMETRY,
+    DISABLE_TELEMETRY
 };
 
 struct RobotCommandPayload {

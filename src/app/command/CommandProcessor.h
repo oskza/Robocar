@@ -1,14 +1,12 @@
-#ifndef COMMAND_SERVICE_H
-#define COMMAND_SERVICE_H
+#ifndef COMMAND_PROCESSOR_H
+#define COMMAND_PROCESSOR_H
 #include "CommandDispatcher.h"
 
-class Robot;
-
-class CommandService {
+class CommandProcessor {
 private:
     CommandDispatcher _dispatcher;
 public:
-    explicit CommandService(Robot &robot);
+    explicit CommandProcessor(Robot &robot);
     bool handle(
         const char *request,
         size_t requestLength,

@@ -21,6 +21,7 @@ private:
     RobotConfig _cfg;
     uint32_t _lastMotionUpdateMs;
     uint32_t _lastWifiUpdateMs;
+    bool _setTelemetryEnabled(bool enabled = true);
 public:
     Robot(
         SystemController &system,
@@ -31,16 +32,16 @@ public:
         MotionStorage &motionStorage,
         RobotStorage &storage
     );
-
     void begin(
         uint32_t motorPwmFrequency,
         uint8_t encoderSlots,
         float powerMaxCurrentAmps,
         float powerShuntOhms
     );
-
     void update();
 
+    bool enableTelemetry();
+    bool disableTelemetry();
     bool isTelemetryEnabled();
 
     RobotSnapshot getSnapshot() const;

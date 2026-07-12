@@ -4,7 +4,7 @@ static constexpr size_t RESPONSE_BUFFER_SIZE = 2048;
 
 WebSocketService *WebSocketService::_instance = nullptr;
 
-WebSocketService::WebSocketService(WebSocketServer &server, CommandService &commands)
+WebSocketService::WebSocketService(WebSocketServer &server, CommandProcessor &commands)
     : _server(server), _commands(commands) { _instance = this; }
 
 void WebSocketService::_onMessage(const char *data, size_t len) {

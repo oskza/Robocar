@@ -32,5 +32,13 @@ bool RobotCommandJsonReader::read(JsonObjectConst json, CommandEnvelope &command
         command.command.robot = RobotCommand::RESET_CONFIG;
         return true;
     }
+    if (strcmp(cmd, "enableTelemetry") == 0) {
+        command.command.robot = RobotCommand::ENABLE_TELEMETRY;
+        return true;
+    }
+    if (strcmp(cmd, "disableTelemetry") == 0) {
+        command.command.robot = RobotCommand::DISABLE_TELEMETRY;
+        return true;
+    }
     return false;
 }

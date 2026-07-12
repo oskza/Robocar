@@ -20,6 +20,16 @@ Robot::Robot(
         _lastMotionUpdateMs(0),
         _lastWifiUpdateMs(0) {}
 
+bool Robot::_setTelemetryEnabled(bool enabled) {
+    if (_cfg.telemetryEnabled == enabled)
+        return true;
+    _cfg.telemetryEnabled = enabled;
+    const bool res = _storage.saveConfig(_cfg);
+    if (!res)
+        _cfg.telemetryEnabled = !enabled;
+    return res;
+}
+
 void Robot::begin(
     uint32_t motorPwmFrequency,
     uint8_t encoderSlots,
@@ -57,6 +67,10 @@ void Robot::update() {
         _wifi.update(now);
     }
 }
+
+bool Robot::enableTelemetry() { return _setTelemetryEnabled(true); }
+
+bool Robot::disableTelemetry() { return _setTelemetryEnabled(false); }
 
 bool Robot::isTelemetryEnabled() { return _cfg.telemetryEnabled; }
 

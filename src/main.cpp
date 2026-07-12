@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include <ArduinoOTA.h>
 #include <WebSocketServer.h>
-#include "app/command/CommandService.h"
+#include "app/ota/OtaService.h"
 #include "app/websocket/WebSocketService.h"
 #include "app/telemetry/TelemetryService.h"
+#include "app/command/CommandProcessor.h"
 #include "hardware/RobotHardwareConfig.h"
 #include "robot/Robot.h"
 
@@ -67,11 +67,13 @@ Robot robot(
     robotStorage
 );
 
-CommandService commandService(robot);
-
 WebSocketServer webSocketServer(WS_PORT, WS_PATH);
 
-WebSocketService webSocketService(webSocketServer, commandService);
+OtaService otaService;
+
+CommandProcessor commandProcessor(robot);
+
+WebSocketService webSocketService(webSocketServer, commandProcessor);
 
 TelemetryService telemetryService(robot, webSocketServer, WS_BROADCAST_INTERVAL_MS);
 
@@ -88,13 +90,12 @@ void setup() {
         INA226_MAX_CURRENT_AMPS,
         INA226_SHUNT_OHMS
     );
-    ArduinoOTA.setHostname(robot.getHostname());
-    ArduinoOTA.begin();
+    otaService.begin(robot.getHostname());
     webSocketService.begin();
 }
 
 void loop() {
-    ArduinoOTA.handle();
+    otaService.update();
     robot.update();
     webSocketService.update();
     if (robot.isTelemetryEnabled())

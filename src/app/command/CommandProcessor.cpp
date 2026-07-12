@@ -1,11 +1,11 @@
-#include "CommandService.h"
+#include "CommandProcessor.h"
 #include "json/CommandJsonParser.h"
 #include "json/CommandJsonSerializer.h"
 #include "CommandResponseBuilder.h"
 
-CommandService::CommandService(Robot &robot) : _dispatcher(robot) {}
+CommandProcessor::CommandProcessor(Robot &robot) : _dispatcher(robot) {}
 
-bool CommandService::handle(const char *request, size_t requestLength, char *responseBuffer, size_t responseCapacity) {
+bool CommandProcessor::handle(const char *request, size_t requestLength, char *responseBuffer, size_t responseCapacity) {
     CommandEnvelope command{};
     CommandResponse response{};
     if (!CommandJsonParser::parse(request, requestLength, command)) {

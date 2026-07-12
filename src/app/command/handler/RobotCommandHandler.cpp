@@ -28,6 +28,20 @@ bool RobotCommandHandler::execute(
             robot.resetConfig();
             CommandResponseBuilder::ack(response);
             return true;
+        case RobotCommand::ENABLE_TELEMETRY:
+            if (!robot.enableTelemetry()) {
+                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
+                return false;
+            }
+            CommandResponseBuilder::ack(response);
+            return true;
+        case RobotCommand::DISABLE_TELEMETRY:
+            if (!robot.disableTelemetry()) {
+                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
+                return false;
+            }
+            CommandResponseBuilder::ack(response);
+            return true;
     }
     CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
     return false;
