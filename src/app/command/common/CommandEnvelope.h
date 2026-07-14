@@ -3,7 +3,7 @@
 #include "CommandDomain.h"
 #include "RobotCommand.h"
 #include "domain/system/SystemCommand.h"
-#include "PowerCommand.h"
+#include "domain/power/PowerCommand.h"
 #include "MotionCommand.h"
 #include "WifiCommand.h"
 

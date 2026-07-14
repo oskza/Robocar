@@ -2,7 +2,7 @@
 #define POWER_COMMAND_HANDLER_H
 #include "../common/CommandResponse.h"
 #include "../CommandResponseBuilder.h"
-#include "../common/PowerCommand.h"
+#include "domain/power/PowerCommand.h"
 #include "../../../robot/Robot.h"
 
 class PowerCommandHandler {
