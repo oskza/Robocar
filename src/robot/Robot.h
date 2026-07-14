@@ -1,6 +1,5 @@
 #ifndef ROBOT_H
 #define ROBOT_H
-#include "subsystems/system/SystemController.h"
 #include "subsystems/power/PowerController.h"
 #include "subsystems/network/WifiController.h"
 #include "subsystems/network/WifiStorage.h"
@@ -11,7 +10,6 @@
 
 class Robot {
 private:
-    SystemController &_system;
     PowerController &_power;
     WifiController &_wifi;
     MotionController &_motion;
@@ -24,7 +22,6 @@ private:
     bool _setTelemetryEnabled(bool enabled = true);
 public:
     Robot(
-        SystemController &system,
         PowerController &power,
         WifiController &wifi,
         MotionController &motion,

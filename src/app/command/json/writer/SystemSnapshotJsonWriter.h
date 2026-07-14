@@ -1,8 +1,7 @@
 #ifndef SYSTEM_SNAPSHOT_JSON_WRITER_H
 #define SYSTEM_SNAPSHOT_JSON_WRITER_H
-
 #include <ArduinoJson.h>
-#include "../../../../subsystems/system/SystemSnapshot.h"
+#include "domain/system/SystemSnapshot.h"
 
 class SystemSnapshotJsonWriter {
 public:

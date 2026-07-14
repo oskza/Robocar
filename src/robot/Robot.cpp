@@ -1,7 +1,8 @@
 #include "Robot.h"
+#include "platform/esp32/system/System.h"
+#include "app/system/FactoryReset.h"
 
 Robot::Robot(
-    SystemController &system,
     PowerController &power,
     WifiController &wifi,
     MotionController &motion,
@@ -9,8 +10,7 @@ Robot::Robot(
     MotionStorage &motionStorage,
     RobotStorage &storage
 )
-    : _system(system),
-        _power(power),
+    : _power(power),
         _wifi(wifi),
         _motion(motion),
         _wifiStorage(wifiStorage),
@@ -57,7 +57,7 @@ void Robot::begin(
 }
 
 void Robot::update() {
-    const uint32_t now = _system.getUptimeMs();
+    const uint32_t now = getUptimeMs();
     if (now - _lastMotionUpdateMs >= _cfg.motionUpdateIntervalMs) {
         _lastMotionUpdateMs = now;
         _motion.update(now);
@@ -76,7 +76,7 @@ bool Robot::isTelemetryEnabled() { return _cfg.telemetryEnabled; }
 
 RobotSnapshot Robot::getSnapshot() const {
     RobotSnapshot snapshot{};
-    snapshot.system = _system.getSnapshot();
+    snapshot.system = Platform::System::getSnapshot();
     snapshot.network = _wifi.getSnapshot();
     snapshot.motion = _motion.getSnapshot();
     snapshot.power = _power.getSnapshot();
@@ -97,13 +97,13 @@ void Robot::resetConfig() {
     _storage.loadConfig(_cfg);
 }
 
-SystemSnapshot Robot::getSystemSnapshot() const { return _system.getSnapshot(); }
+SystemSnapshot Robot::getSystemSnapshot() const { Platform::System::getSnapshot(); }
 
-uint32_t Robot::getUptimeMs() const { return _system.getUptimeMs(); }
+uint32_t Robot::getUptimeMs() const { return Platform::System::getUptimeMs(); }
 
-void Robot::restart() { _system.restart(); }
+void Robot::restart() { Platform::System::restart(); }
 
-void Robot::factoryReset() { _system.factoryReset(); }
+void Robot::factoryReset() { Application::factoryReset(); }
 
 PowerSnapshot Robot::getPowerSnapshot() const { return _power.getSnapshot(); }
 
