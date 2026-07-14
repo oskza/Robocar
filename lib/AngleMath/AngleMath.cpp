@@ -8,9 +8,5 @@ float AngleMath::normalizeDegrees(float degrees) {
 
 float AngleMath::differenceDegrees(float fromDegrees, float toDegrees) {
     float diff = normalizeDegrees(toDegrees) - normalizeDegrees(fromDegrees);
-    if (diff > 180.0f)
-        diff -= 360.0f;
-    else if (diff < -180.0f)
-        diff += 360.0f;
-    return diff;
+    return (diff > 180.0f) ? diff -= 360.0f : (diff < -180.0f) ? diff += 360.0f : diff;
 }

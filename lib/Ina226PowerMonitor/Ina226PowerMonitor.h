@@ -1,7 +1,5 @@
 #ifndef INA226_POWER_MONITOR_H
 #define INA226_POWER_MONITOR_H
-#include <Arduino.h>
-#include <Wire.h>
 #include <INA226.h>
 
 class Ina226PowerMonitor {

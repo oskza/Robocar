@@ -5,8 +5,7 @@
 class WebSocketServer {
 public:
     using MessageHandler = void (*)(const char *data, size_t len);
-    explicit WebSocketServer(uint16_t port = 80, const char *path = "/ws",
-                                uint8_t maxClients = 4);
+    explicit WebSocketServer(uint16_t port = 80, const char *path = "/ws", uint8_t maxClients = 4);
     void begin(MessageHandler messageHandler = nullptr);
     void onMessage(MessageHandler handler);
     void update();

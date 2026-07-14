@@ -1,7 +1,8 @@
 #include "Bmm150Compass.h"
-#include <Wire.h>
 
-Bmm150Compass::Bmm150Compass() : _sensor(&Wire, I2C_ADDRESS_4), _available(false) {}
+Bmm150Compass::Bmm150Compass()
+    : _sensor(&Wire, I2C_ADDRESS_4),
+        _available(false) {}
 
 bool Bmm150Compass::begin() {
     if (_sensor.begin() != 0) {
