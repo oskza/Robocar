@@ -1,6 +1,6 @@
 #ifndef SYSTEM_COMMAND_HANDLER_H
 #define SYSTEM_COMMAND_HANDLER_H
-#include "../common/SystemCommand.h"
+#include "domain/system/SystemCommand.h"
 #include "../common/CommandResponse.h"
 #include "../../../robot/Robot.h"
 #include "../CommandResponseBuilder.h"

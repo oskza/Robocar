@@ -2,7 +2,7 @@
 #define COMMAND_ENVELOPE_H
 #include "CommandDomain.h"
 #include "RobotCommand.h"
-#include "SystemCommand.h"
+#include "domain/system/SystemCommand.h"
 #include "PowerCommand.h"
 #include "MotionCommand.h"
 #include "WifiCommand.h"
