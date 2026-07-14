@@ -1,4 +1,5 @@
 #include "MotionController.h"
+#include <AngleMath.h>
 
 MotionController::MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass)
     : _differential(differential),

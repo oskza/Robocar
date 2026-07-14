@@ -1,7 +1,5 @@
 #ifndef MOTION_CONTROLLER_H
 #define MOTION_CONTROLLER_H
-#include <Arduino.h>
-#include <AngleMath.h>
 #include <Bmm150Compass.h>
 #include "drive/DifferentialDrive.h"
 #include "odometry/Odometry.h"
