@@ -4,7 +4,7 @@
 
 struct SystemSnapshot {
     uint32_t uptimeMs;
-    struct {
+    struct HeapSnapshot {
         uint32_t freeBytes;
         uint32_t minFreeBytes;
         uint32_t maxAllocBytes;
