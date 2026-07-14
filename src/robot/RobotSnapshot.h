@@ -1,7 +1,7 @@
 #ifndef ROBOT_SNAPSHOT_H
 #define ROBOT_SNAPSHOT_H
 #include "domain/system/SystemSnapshot.h"
-#include "subsystems/power/PowerSnapshot.h"
+#include "domain/power/PowerSnapshot.h"
 #include "subsystems/network/WifiSnapshot.h"
 #include "subsystems/motion/MotionSnapshot.h"
 

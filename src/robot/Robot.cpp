@@ -3,7 +3,7 @@
 #include "app/system/FactoryReset.h"
 
 Robot::Robot(
-    PowerController &power,
+    PowerService &power,
     WifiController &wifi,
     MotionController &motion,
     WifiStorage &wifiStorage,

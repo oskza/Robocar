@@ -19,7 +19,7 @@
 using namespace RobotHardwareConfig;
 
 Ina226PowerMonitor powerMonitor(INA226_ADDRESS);
-PowerController powerController(powerMonitor);
+PowerService powerService(powerMonitor);
 
 WifiController wifiController;
 
@@ -56,7 +56,7 @@ MotionStorage motionStorage;
 RobotStorage robotStorage;
 
 Robot robot(
-    powerController,
+    powerService,
     wifiController,
     motionController,
     wifiStorage,
