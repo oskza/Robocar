@@ -1,6 +1,5 @@
 #ifndef ODOMETRY_H
 #define ODOMETRY_H
-#include <Arduino.h>
 #include <Encoder.h>
 
 class Odometry {

@@ -2,7 +2,6 @@
 #define WIFI_DEFAULTS_H
 #include "WifiConfig.h"
 #include "WifiCredentials.h"
-#include "WifiDefaults.h"
 
 class WifiDefaults {
 public:

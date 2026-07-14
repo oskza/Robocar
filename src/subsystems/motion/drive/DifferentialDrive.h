@@ -1,6 +1,5 @@
 #ifndef DIFFERENTIAL_DRIVE_H
 #define DIFFERENTIAL_DRIVE_H
-#include <Arduino.h>
 #include "../wheel/WheelOutputController.h"
 
 class DifferentialDrive {
@@ -16,8 +15,8 @@ public:
         uint8_t rightMinEffectivePwm = 0
     );
     bool isStopped() const;
-    int16_t getRightOutput() const;
     int16_t getLeftOutput() const;
+    int16_t getRightOutput() const;
     void drive(int16_t velocity, int16_t turn);
     void update();
     void stop();
