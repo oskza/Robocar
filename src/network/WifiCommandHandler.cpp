@@ -7,10 +7,6 @@ bool WifiCommandHandler::execute(
     CommandResponse &response
 ) {
     switch (command) {
-        case WifiCommand::STATUS:
-            CommandResponseBuilder::status(response, robot.getWifiSnapshot());
-            return true;
-
         case WifiCommand::GET_CONFIG: {
             WifiConfig cfg{};
             robot.getWifiConfig(cfg);

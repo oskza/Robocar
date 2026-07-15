@@ -6,12 +6,10 @@
 
 class CommandResponseBuilder {
 public:
-    static void ack(CommandResponse &response);
+    static void ack(CommandResponse &response, CommandPostAction postAction = CommandPostAction::NONE);
     static void error(CommandResponse &response, CommandError error);
     static void status(CommandResponse &response, const RobotSnapshot &snapshot);
-    static void status(CommandResponse &response, const SystemSnapshot &snapshot);
     static void status(CommandResponse &response, const MotionSnapshot &snapshot);
-    static void status(CommandResponse &response, const WifiSnapshot &snapshot);
     static void config(CommandResponse &response, const RobotConfig &config);
     static void config(CommandResponse &response, const MotionConfig &config);
     static void config(CommandResponse &response, const WifiConfig &config);

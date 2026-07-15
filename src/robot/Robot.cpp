@@ -103,7 +103,7 @@ uint32_t Robot::getUptimeMs() const { return Platform::System::getUptimeMs(); }
 
 void Robot::restart() { Platform::System::restart(); }
 
-void Robot::factoryReset() { Application::factoryReset(); }
+void Robot::factoryReset() { System::factoryReset(); }
 
 PowerSnapshot Robot::getPowerSnapshot() const { return _power.getSnapshot(); }
 

@@ -1,28 +1,19 @@
 #include "SystemCommandHandler.h"
+#include "command/CommandPostAction.h"
+#include "command/CommandResponseBuilder.h"
 
-bool SystemCommandHandler::execute(
-    Robot &robot,
-    SystemCommand command,
-    const SystemCommandPayload &payload,
-    CommandResponse &response
-) {
-    (void)payload;
-    switch (command) {
-        case SystemCommand::STATUS:
-            CommandResponseBuilder::status(response, robot.getSystemSnapshot());
-            return true;
-        case SystemCommand::PING:
-            CommandResponseBuilder::ack(response);
-            return true;
-        case SystemCommand::RESTART:
-            CommandResponseBuilder::ack(response);
-            robot.restart();
-            return true;
-        case SystemCommand::FACTORY_RESET:
-            CommandResponseBuilder::ack(response);
-            robot.factoryReset();
-            return true;
+namespace SystemCommandHandler {
+    bool execute(SystemCommand command, const SystemCommandPayload &payload, CommandResponse &response) {
+        (void)payload;
+        switch (command) {
+            case SystemCommand::RESTART:
+                CommandResponseBuilder::ack(response, CommandPostAction::RESTART);
+                return true;
+            case SystemCommand::FACTORY_RESET:
+                CommandResponseBuilder::ack(response, CommandPostAction::FACTORY_RESET);
+                return true;
+        }
+        CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
+        return false;
     }
-    CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
-    return false;
 }

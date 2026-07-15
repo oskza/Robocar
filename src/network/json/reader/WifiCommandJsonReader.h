@@ -5,9 +5,9 @@
 
 class WifiCommandJsonReader {
 private:
-    static bool _readConfig(JsonVariantConst &payload, WifiConfig &cfg);
-    static bool _readCredentials(JsonVariantConst &payload, WifiCredentials &creds);
+    static bool _readConfig(JsonObjectConst json, WifiConfig &cfg);
+    static bool _readCredentials(JsonObjectConst json, WifiCredentials &creds);
 public:
-    static bool read(JsonObjectConst json, CommandEnvelope &command);
+    static bool read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command);
 };
 #endif

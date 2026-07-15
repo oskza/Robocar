@@ -4,6 +4,7 @@
 #include "CommandResponseStatus.h"
 #include "CommandResponseType.h"
 #include "CommandError.h"
+#include "CommandPostAction.h"
 #include "robot/RobotSnapshot.h"
 #include "robot/RobotConfig.h"
 #include "motion/MotionConfig.h"
@@ -15,6 +16,7 @@ struct CommandResponse {
     CommandResponseStatus status;
     CommandResponseType type;
     CommandError error;
+    CommandPostAction postAction = CommandPostAction::NONE;
     struct {
         RobotSnapshot robot;
         RobotConfig robotConfig;

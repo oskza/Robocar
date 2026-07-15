@@ -20,7 +20,6 @@ bool CommandDispatcher::dispatch(const CommandEnvelope &command, CommandResponse
 
         case CommandDomain::SYSTEM:
             return SystemCommandHandler::execute(
-                _robot,
                 command.command.system,
                 command.payload.system,
                 response

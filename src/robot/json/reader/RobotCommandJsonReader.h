@@ -5,8 +5,8 @@
 
 class RobotCommandJsonReader {
 private:
-    static bool _readConfig(JsonVariantConst &payload, RobotConfig &cfg);
+    static bool _readConfig(JsonObjectConst json, RobotConfig &cfg);
 public:
-    static bool read(JsonObjectConst json, CommandEnvelope &command);
+    static bool read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command);
 };
 #endif

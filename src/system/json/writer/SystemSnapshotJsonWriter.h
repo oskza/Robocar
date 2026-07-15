@@ -3,9 +3,7 @@
 #include <ArduinoJson.h>
 #include "../../SystemSnapshot.h"
 
-class SystemSnapshotJsonWriter {
-public:
-    static void write(JsonObject json, const SystemSnapshot &snapshot);
-};
-
+namespace SystemSnapshotJsonWriter {
+    void write(JsonObject json, const SystemSnapshot &snapshot);
+}
 #endif

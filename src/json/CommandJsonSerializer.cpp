@@ -22,9 +22,7 @@ const char *CommandJsonSerializer::_typeToString(CommandResponseType type) {
         case CommandResponseType::ACK: return "ack";
         case CommandResponseType::ERROR: return "error";
         case CommandResponseType::ROBOT_STATUS: return "robotStatus";
-        case CommandResponseType::SYSTEM_STATUS: return "systemStatus";
         case CommandResponseType::MOTION_STATUS: return "motionStatus";
-        case CommandResponseType::WIFI_STATUS: return "wifiStatus";
         case CommandResponseType::ROBOT_CONFIG: return "robotConfig";
         case CommandResponseType::MOTION_CONFIG: return "motionConfig";
         case CommandResponseType::WIFI_CONFIG: return "wifiConfig";
@@ -70,16 +68,8 @@ bool CommandJsonSerializer::serialize(
             RobotSnapshotJsonWriter::write(payload, response.payload.robot);
             break;
 
-        case CommandResponseType::SYSTEM_STATUS:
-            SystemSnapshotJsonWriter::write(payload, response.payload.system);
-            break;
-
         case CommandResponseType::MOTION_STATUS:
             MotionSnapshotJsonWriter::write(payload, response.payload.motion);
-            break;
-
-        case CommandResponseType::WIFI_STATUS:
-            WifiSnapshotJsonWriter::write(payload, response.payload.wifi);
             break;
 
         case CommandResponseType::ROBOT_CONFIG:

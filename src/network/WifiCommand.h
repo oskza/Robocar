@@ -5,8 +5,6 @@
 #include "network/WifiCredentials.h"
 
 enum class WifiCommand : uint8_t {
-    STATUS,
-
     GET_CONFIG,
     SET_CONFIG,
     RESET_CONFIG,
