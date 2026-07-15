@@ -1,10 +1,10 @@
 #ifndef ROBOT_H
 #define ROBOT_H
-#include "app/power/PowerService.h"
-#include "subsystems/network/WifiController.h"
-#include "subsystems/network/WifiStorage.h"
-#include "subsystems/motion/MotionController.h"
-#include "subsystems/motion/MotionStorage.h"
+#include "power/PowerService.h"
+#include "network/WifiController.h"
+#include "network/WifiStorage.h"
+#include "motion/MotionController.h"
+#include "motion/MotionStorage.h"
 #include "RobotStorage.h"
 #include "RobotSnapshot.h"
 

@@ -1,6 +1,6 @@
 #include "Robot.h"
 #include "platform/esp32/system/System.h"
-#include "app/system/FactoryReset.h"
+#include "system/FactoryReset.h"
 
 Robot::Robot(
     PowerService &power,

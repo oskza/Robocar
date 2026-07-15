@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <WebSocketServer.h>
-#include "app/ota/OtaService.h"
-#include "app/websocket/WebSocketService.h"
-#include "app/telemetry/TelemetryService.h"
-#include "app/command/CommandProcessor.h"
+#include "ota/OtaService.h"
+#include "websocket/WebSocketService.h"
+#include "telemetry/TelemetryService.h"
+#include "command/CommandProcessor.h"
 #include "hardware/RobotHardwareConfig.h"
 #include "robot/Robot.h"
 

@@ -1,9 +1,9 @@
 #ifndef ROBOT_SNAPSHOT_H
 #define ROBOT_SNAPSHOT_H
-#include "domain/system/SystemSnapshot.h"
-#include "domain/power/PowerSnapshot.h"
-#include "subsystems/network/WifiSnapshot.h"
-#include "subsystems/motion/MotionSnapshot.h"
+#include "system/SystemSnapshot.h"
+#include "power/PowerSnapshot.h"
+#include "network/WifiSnapshot.h"
+#include "motion/MotionSnapshot.h"
 
 struct RobotSnapshot {
     SystemSnapshot system;
