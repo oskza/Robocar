@@ -5,10 +5,9 @@
 
 class PreferencesStore {
 private:
-    Preferences _preferences;
+    const char *_namespaceStr;
 public:
-    bool begin(const char *name, bool readOnly = false);
-    void end();
+    explicit PreferencesStore(const char *namespaceStr);
     bool load(const char *key, void *data, size_t size);
     bool save(const char *key, const void *data, size_t size);
     bool remove(const char *key);
