@@ -3,11 +3,11 @@
 #include <stdint.h>
 
 struct MotionConfig {
-    float wheelDiameterMeters;
-    float wheelCircumferenceFactor;
-    uint8_t wheelAcceleration;
-    uint8_t motorLeftMinPwm;
-    uint8_t motorRightMinPwm;
-    float headingToleranceDegrees;
+    float wheelDiameterMeters = 0.0f;
+    float wheelCircumferenceFactor = 1.0f;
+    uint8_t wheelAcceleration = 0;
+    uint8_t motorLeftMinPwm = 0;
+    uint8_t motorRightMinPwm = 0;
+    float headingToleranceDegrees = 0.0f;
 };
 #endif
