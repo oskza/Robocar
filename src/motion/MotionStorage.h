@@ -7,9 +7,9 @@ class MotionStorage {
 private:
     PreferencesStore _store;
 public:
-    bool begin();
+    MotionStorage();
     bool loadConfig(MotionConfig &cfg);
     bool saveConfig(const MotionConfig &cfg);
-    bool resetConfig();
+    bool clear();
 };
 #endif

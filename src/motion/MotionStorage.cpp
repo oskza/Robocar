@@ -6,21 +6,15 @@ namespace {
     constexpr const char *KEY_CONFIG = "cfg";
 }
 
-bool MotionStorage::begin() { return _store.begin(STORE_NAMESPACE); }
+MotionStorage::MotionStorage() : _store(STORE_NAMESPACE) {}
 
 bool MotionStorage::loadConfig(MotionConfig &cfg) {
     if (_store.load(KEY_CONFIG, &cfg, sizeof(cfg)))
         return true;
-    MotionDefaults::applyConfig(cfg);
+    cfg = MotionDefaults::config();
     return saveConfig(cfg);
 }
 
-bool MotionStorage::saveConfig(const MotionConfig &cfg) {
-    return _store.save(KEY_CONFIG, &cfg, sizeof(cfg));
-}
+bool MotionStorage::saveConfig(const MotionConfig &cfg) { return _store.save(KEY_CONFIG, &cfg, sizeof(cfg)); }
 
-bool MotionStorage::resetConfig() {
-    MotionConfig cfg{};
-    MotionDefaults::applyConfig(cfg);
-    return saveConfig(cfg);
-}
+bool MotionStorage::clear() { return _store.clear(); }
