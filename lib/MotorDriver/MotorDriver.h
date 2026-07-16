@@ -20,10 +20,10 @@ public:
     static constexpr uint8_t MAX_OUTPUT = 255;
     MotorDriver(uint8_t pwmPin, uint8_t in1Pin, uint8_t in2Pin, uint8_t pwmChannel);
     void begin(uint32_t pwmFrequency = 1000, uint8_t minEffectivePwm = 0);
+    void stop();
+    void brake();
     bool isStopped() const;
     int16_t getOutput() const;
     void setOutput(int16_t output);
-    void stop();
-    void brake();
 };
 #endif

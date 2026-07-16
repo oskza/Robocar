@@ -46,6 +46,18 @@ void MotorDriver::begin(uint32_t pwmFrequency, uint8_t minEffectivePwm) {
     _applyCoast();
 }
 
+void MotorDriver::stop() {
+    _output = 0;
+    ledcWrite(_pwmChannel, 0);
+    _applyCoast();
+}
+
+void MotorDriver::brake() {
+    _output = 0;
+    _applyBrake();
+    ledcWrite(_pwmChannel, MAX_OUTPUT);
+}
+
 bool MotorDriver::isStopped() const { return _output == 0; }
 
 int16_t MotorDriver::getOutput() const { return _output; }
@@ -66,16 +78,4 @@ void MotorDriver::setOutput(int16_t output) {
     else
         _applyReverse();
     ledcWrite(_pwmChannel, hwPwm);
-}
-
-void MotorDriver::stop() {
-    _output = 0;
-    ledcWrite(_pwmChannel, 0);
-    _applyCoast();
-}
-
-void MotorDriver::brake() {
-    _output = 0;
-    _applyBrake();
-    ledcWrite(_pwmChannel, MAX_OUTPUT);
 }
