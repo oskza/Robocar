@@ -15,17 +15,19 @@ private:
     MotionConfig _cfg;
     MotionState _state;
     struct TimedTarget {
+        uint32_t durationMs = 0;
         uint32_t endTimeMs = 0;
+        int16_t velocity = 0;
+        int16_t turn = 0;
+        bool started = false;
         bool expired(uint32_t nowMs) const {
-            return (int32_t)(nowMs - endTimeMs) >= 0;
+            return started && (int32_t)(nowMs - endTimeMs) >= 0;
         }
     } _timed;
     struct DistanceTarget {
         uint32_t startTicks = 0;
         uint32_t targetTicks = 0;
-        bool reached(uint32_t currentTicks) const {
-            return (currentTicks - startTicks) >= targetTicks;
-        }
+        bool reached(uint32_t currentTicks) const { return currentTicks - startTicks >= targetTicks; }
     } _distance;
     struct RotationTarget {
         float headingDegrees = 0.0f;
@@ -44,6 +46,7 @@ public:
     void rotateBy(float degrees, uint8_t speed);
     void stop();
     void brake();
+    void resetOdometry();
     bool isStopped() const;
     MotionState getState() const;
     MotionSnapshot getSnapshot() const;

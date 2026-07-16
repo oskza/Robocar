@@ -15,16 +15,17 @@ void MotionController::_clearTargets() {
 }
 
 void MotionController::_updateRotation() {
-    if (!_compass.isAvailable()) {
+    float currentHeading = 0.0f;
+    if (!_compass.readHeadingDegrees(currentHeading)) {
         stop();
         return;
     }
-    const float diff = AngleMath::differenceDegrees(_compass.getHeadingDegrees(), _rotation.headingDegrees);
+    const float diff = AngleMath::differenceDegrees(currentHeading, _rotation.headingDegrees);
     if (fabsf(diff) <= _cfg.headingToleranceDegrees) {
         brake();
         return;
     }
-    int16_t turn = (diff > 0.0f) ? -(int16_t)_rotation.speed :  (int16_t)_rotation.speed;
+    const int16_t turn = (diff > 0.0f) ? -(int16_t)_rotation.speed : (int16_t)_rotation.speed;
     _differential.drive(0, turn);
 }
 
@@ -44,7 +45,7 @@ void MotionController::begin(const MotionConfig &cfg, uint32_t pwmFrequency, uin
         _cfg.wheelCircumferenceFactor
     );
 
-    if (!_compass.begin()) {}
+    _compass.begin();
 
     _clearTargets();
     _state = MotionState::IDLE;
@@ -63,8 +64,10 @@ void MotionController::driveFor(int16_t velocity, int16_t turn, uint32_t duratio
     }
     _clearTargets();
     _state = MotionState::TIMED;
-    _timed.endTimeMs = millis() + durationMs;
-    _differential.drive(velocity, turn);
+    _timed.velocity = velocity;
+    _timed.turn = turn;
+    _timed.durationMs = durationMs;
+    _timed.started = false;
 }
 
 void MotionController::driveDistance(int16_t velocity, float meters) {
@@ -92,18 +95,28 @@ void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
     _clearTargets();
     _state = MotionState::ROTATING;
     _rotation.headingDegrees = AngleMath::normalizeDegrees(headingDegrees);
-    _rotation.speed = (speed > MotorDriver::MAX_OUTPUT) ? MotorDriver::MAX_OUTPUT : speed;
+    _rotation.speed = speed;
 }
 
 void MotionController::rotateBy(float degrees, uint8_t speed) {
-    rotateTo(_compass.getHeadingDegrees() + degrees, speed);
+    float currentHeading = 0.0f;
+    if (!_compass.readHeadingDegrees(currentHeading)) {
+        stop();
+        return;
+    }
+    rotateTo(currentHeading + degrees, speed);
 }
 
 void MotionController::update(uint32_t nowMs) {
     switch (_state) {
         case MotionState::TIMED:
-            if (_timed.expired(nowMs))
+            if (!_timed.started) {
+                _timed.started = true;
+                _timed.endTimeMs = nowMs + _timed.durationMs;
+                _differential.drive(_timed.velocity, _timed.turn);
+            } else if (_timed.expired(nowMs)) {
                 brake();
+            }
             break;
         case MotionState::DISTANCE:
             if (_distance.reached(_odometry.getTicks()))
@@ -131,6 +144,8 @@ void MotionController::brake() {
     _differential.brake();
 }
 
+void MotionController::resetOdometry() { _odometry.reset(); }
+
 bool MotionController::isStopped() const { return _state == MotionState::IDLE && _differential.isStopped(); }
 
 MotionState MotionController::getState() const { return _state; }
@@ -139,13 +154,18 @@ MotionSnapshot MotionController::getSnapshot() const {
     MotionSnapshot snapshot{};
     snapshot.state = _state;
     snapshot.stopped = isStopped();
-    snapshot.heading.currentDegrees = _compass.getHeadingDegrees();
-    snapshot.heading.targetDegrees = _rotation.headingDegrees;
-    snapshot.heading.errorDegrees = (_state == MotionState::ROTATING)
-        ? AngleMath::differenceDegrees(snapshot.heading.targetDegrees, snapshot.heading.currentDegrees)
-        : 0.0f;
     snapshot.output.left = _differential.getLeftOutput();
     snapshot.output.right = _differential.getRightOutput();
+    snapshot.heading.available = _compass.isAvailable();
+    if (snapshot.heading.available) {
+        _compass.readHeadingDegrees(snapshot.heading.currentDegrees);
+        if (snapshot.state == MotionState::ROTATING) {
+            snapshot.heading.targetDegrees = _rotation.headingDegrees;
+            snapshot.heading.errorDegrees = AngleMath::differenceDegrees(
+                snapshot.heading.targetDegrees, snapshot.heading.currentDegrees
+            );
+        }
+    }
     snapshot.odometry.distanceMeters = _odometry.getMeters();
     snapshot.odometry.averageTicks = _odometry.getTicks();
     return snapshot;
