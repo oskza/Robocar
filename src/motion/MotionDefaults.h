@@ -2,8 +2,7 @@
 #define MOTION_DEFAULTS_H
 #include "MotionConfig.h"
 
-class MotionDefaults {
-public:
-    static void applyConfig(MotionConfig &cfg);
-};
+namespace MotionDefaults {
+    MotionConfig config();
+}
 #endif
