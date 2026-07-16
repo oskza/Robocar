@@ -10,7 +10,11 @@ private:
     uint8_t _encoderSlots;
 public:
     Odometry(Encoder &leftEncoder, Encoder &rightEncoder);
-    void begin(uint8_t encoderSlots, float wheelDiameterMeters, float wheelCircumferenceFactor = 1.0f);
+    void begin(
+        uint8_t encoderSlots,
+        float wheelDiameterMeters,
+        float wheelCircumferenceFactor = 1.0f
+    );
     void reset();
     uint32_t getTicks() const;
     float getMeters() const;
