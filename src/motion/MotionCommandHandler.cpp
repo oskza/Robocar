@@ -1,74 +1,96 @@
 #include "MotionCommandHandler.h"
+#include "MotionDefaults.h"
+#include "command/CommandResponseBuilder.h"
 
-bool MotionCommandHandler::execute(
-    Robot &robot,
-    MotionCommand command,
-    const MotionCommandPayload &payload,
-    CommandResponse &response
-) {
-    switch (command) {
-        case MotionCommand::STATUS:
-            CommandResponseBuilder::status(response, robot.getMotionSnapshot());
-            return true;
-        case MotionCommand::GET_CONFIG: {
-            MotionConfig cfg{};
-            robot.getMotionConfig(cfg);
-            CommandResponseBuilder::config(response, cfg);
-            return true;
-        }
-        case MotionCommand::SET_CONFIG:
-            if (!robot.setMotionConfig(payload.cfg)) {
-                CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
-                return false;
+namespace MotionCommandHandler {
+    bool execute(
+        MotionController &motion,
+        MotionStorage &storage,
+        const MotionCommand &command,
+        CommandResponse &response
+    ) {
+        switch (command.type) {
+            case MotionCommandType::STATUS:
+                CommandResponseBuilder::status(response, motion.getSnapshot());
+                return true;
+
+            case MotionCommandType::GET_CONFIG: {
+                MotionConfig config{};
+                motion.getConfig(config);
+                CommandResponseBuilder::config(response, config);
+                return true;
             }
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::RESET_CONFIG:
-            robot.resetMotion();
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::STOP:
-            robot.stop();
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::BRAKE:
-            robot.brake();
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::DRIVE:
-            robot.drive(payload.drive.velocity, payload.drive.turn);
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::DRIVE_FOR:
-            robot.driveFor(
-                payload.driveFor.velocity,
-                payload.driveFor.turn,
-                payload.driveFor.durationMs
-            );
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::DRIVE_DISTANCE:
-            robot.driveDistance(
-                payload.driveDistance.velocity,
-                payload.driveDistance.distanceMeters
-            );
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::ROTATE_TO:
-            robot.rotateTo(
-                payload.rotate.angleDegrees,
-                payload.rotate.speed
-            );
-            CommandResponseBuilder::ack(response);
-            return true;
-        case MotionCommand::ROTATE_BY:
-            robot.rotateBy(
-                payload.rotate.angleDegrees,
-                payload.rotate.speed
-            );
-            CommandResponseBuilder::ack(response);
-            return true;
+
+            case MotionCommandType::SET_CONFIG:
+                if (!storage.saveConfig(command.payload.config)) {
+                    CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
+                    return false;
+                }
+                motion.setConfig(command.payload.config);
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::RESET_CONFIG: {
+                const MotionConfig config = MotionDefaults::config();
+                if (!storage.saveConfig(config)) {
+                    CommandResponseBuilder::error(
+                        response,
+                        CommandError::STORAGE_ERROR
+                    );
+                    return false;
+                }
+                motion.setConfig(config);
+                CommandResponseBuilder::ack(response);
+                return true;
+            }
+
+            case MotionCommandType::RESET_ODOMETRY:
+                motion.resetOdometry();
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::STOP:
+                motion.stop();
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::BRAKE:
+                motion.brake();
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::DRIVE:
+                motion.drive(command.payload.drive.velocity, command.payload.drive.turn);
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::DRIVE_FOR:
+                motion.driveFor(
+                    command.payload.driveFor.velocity,
+                    command.payload.driveFor.turn,
+                    command.payload.driveFor.durationMs
+                );
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::DRIVE_DISTANCE:
+                motion.driveDistance(command.payload.driveDistance.velocity, command.payload.driveDistance.distanceMeters);
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::ROTATE_TO:
+                motion.rotateTo(command.payload.rotate.angleDegrees, command.payload.rotate.speed);
+                CommandResponseBuilder::ack(response);
+                return true;
+
+            case MotionCommandType::ROTATE_BY:
+                motion.rotateBy(command.payload.rotate.angleDegrees, command.payload.rotate.speed);
+                CommandResponseBuilder::ack(response);
+                return true;
+            case MotionCommandType::UNKNOWN:
+                break;
+        }
+        CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
+        return false;
     }
-    CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
-    return false;
 }
