@@ -3,8 +3,7 @@
 #include <ArduinoJson.h>
 #include "../../MotionConfig.h"
 
-class MotionConfigJsonWriter {
-public:
-    static void write(JsonObject json, const MotionConfig &config);
-};
+namespace MotionConfigJsonWriter {
+    void write(JsonObject json, const MotionConfig &config);
+}
 #endif

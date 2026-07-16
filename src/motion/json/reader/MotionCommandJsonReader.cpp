@@ -2,68 +2,106 @@
 #include <string.h>
 #include "json/JsonValueReader.h"
 
-bool MotionCommandJsonReader::_readConfig(JsonObjectConst json, MotionConfig &cfg) {
-    return JsonValueReader::readFloat(json["wheelDiameterMeters"], cfg.wheelDiameterMeters)
-        && JsonValueReader::readFloat(json["wheelCircumferenceFactor"], cfg.wheelCircumferenceFactor)
-        && JsonValueReader::readUint8(json["wheelAcceleration"], cfg.wheelAcceleration)
-        && JsonValueReader::readUint8(json["motorLeftMinPwm"], cfg.motorLeftMinPwm)
-        && JsonValueReader::readUint8(json["motorRightMinPwm"], cfg.motorRightMinPwm)
-        && JsonValueReader::readFloat(json["headingToleranceDegrees"], cfg.headingToleranceDegrees);
+namespace {
+    bool readConfig(JsonObjectConst json, MotionConfig &config) {
+        return JsonValueReader::readFloat(json["wheelDiameterMeters"], config.wheelDiameterMeters)
+            && JsonValueReader::readFloat(json["wheelCircumferenceFactor"], config.wheelCircumferenceFactor)
+            && JsonValueReader::readUint8(json["wheelAcceleration"], config.wheelAcceleration)
+            && JsonValueReader::readUint8(json["motorLeftMinPwm"], config.motorLeftMinPwm)
+            && JsonValueReader::readUint8(json["motorRightMinPwm"], config.motorRightMinPwm)
+            && JsonValueReader::readFloat(json["headingToleranceDegrees"], config.headingToleranceDegrees);
+    }
+
+    bool readDrive(JsonObjectConst json, MotionDrivePayload &payload) {
+        return JsonValueReader::readInt16(json["velocity"], payload.velocity)
+            && JsonValueReader::readInt16(json["turn"], payload.turn);
+    }
+
+    bool readDriveFor(JsonObjectConst json, MotionDriveForPayload &payload) {
+        return JsonValueReader::readInt16(json["velocity"], payload.velocity)
+            && JsonValueReader::readInt16(json["turn"], payload.turn)
+            && JsonValueReader::readUint32(json["durationMs"], payload.durationMs);
+    }
+
+    bool readDriveDistance(JsonObjectConst json, MotionDriveDistancePayload &payload) {
+        return JsonValueReader::readInt16(json["velocity"], payload.velocity)
+            && JsonValueReader::readFloat(json["distanceMeters"], payload.distanceMeters);
+    }
+
+    bool readRotate(JsonObjectConst json, MotionRotatePayload &payload) {
+        return JsonValueReader::readFloat(json["angleDegrees"], payload.angleDegrees)
+            && JsonValueReader::readUint8(json["speed"], payload.speed);
+    }
 }
 
-bool MotionCommandJsonReader::read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command) {
-    if (commandName == nullptr)
+namespace MotionCommandJsonReader {
+    bool read(const char *command, JsonObjectConst payload, MotionCommand &out) {
+        if (command == nullptr)
+            return false;
+
+        out = {};
+
+        if (strcmp(command, "status") == 0) {
+            out.type = MotionCommandType::STATUS;
+            return true;
+        }
+
+        if (strcmp(command, "getConfig") == 0) {
+            out.type = MotionCommandType::GET_CONFIG;
+            return true;
+        }
+
+        if (strcmp(command, "setConfig") == 0) {
+            out.type = MotionCommandType::SET_CONFIG;
+            return readConfig(payload, out.payload.config);
+        }
+
+        if (strcmp(command, "resetConfig") == 0) {
+            out.type = MotionCommandType::RESET_CONFIG;
+            return true;
+        }
+
+        if (strcmp(command, "resetOdometry") == 0) {
+            out.type = MotionCommandType::RESET_ODOMETRY;
+            return true;
+        }
+
+        if (strcmp(command, "stop") == 0) {
+            out.type = MotionCommandType::STOP;
+            return true;
+        }
+
+        if (strcmp(command, "brake") == 0) {
+            out.type = MotionCommandType::BRAKE;
+            return true;
+        }
+
+        if (strcmp(command, "drive") == 0) {
+            out.type = MotionCommandType::DRIVE;
+            return readDrive(payload, out.payload.drive);
+        }
+
+        if (strcmp(command, "driveFor") == 0) {
+            out.type = MotionCommandType::DRIVE_FOR;
+            return readDriveFor(payload, out.payload.driveFor);
+        }
+
+        if (strcmp(command, "driveDistance") == 0) {
+            out.type = MotionCommandType::DRIVE_DISTANCE;
+            return readDriveDistance(payload, out.payload.driveDistance);
+        }
+
+        if (strcmp(command, "rotateTo") == 0) {
+            out.type = MotionCommandType::ROTATE_TO;
+            return readRotate(payload, out.payload.rotate);
+        }
+
+        if (strcmp(command, "rotateBy") == 0) {
+            out.type = MotionCommandType::ROTATE_BY;
+            return readRotate(payload, out.payload.rotate);
+        }
+
+        out.type = MotionCommandType::UNKNOWN;
         return false;
-    command.domain = CommandDomain::MOTION;
-    if (strcmp(commandName, "status") == 0) {
-        command.command.motion = MotionCommand::STATUS;
-        return true;
     }
-    if (strcmp(commandName, "getConfig") == 0) {
-        command.command.motion = MotionCommand::GET_CONFIG;
-        return true;
-    }
-    if (strcmp(commandName, "setConfig") == 0) {
-        command.command.motion = MotionCommand::SET_CONFIG;
-        return _readConfig(payload, command.payload.motion.cfg);
-    }
-    if (strcmp(commandName, "reset") == 0) {
-        command.command.motion = MotionCommand::RESET_CONFIG;
-        return true;
-    }
-    if (strcmp(commandName, "stop") == 0) {
-        command.command.motion = MotionCommand::STOP;
-        return true;
-    }
-    if (strcmp(commandName, "brake") == 0) {
-        command.command.motion = MotionCommand::BRAKE;
-        return true;
-    }
-    if (strcmp(commandName, "drive") == 0) {
-        command.command.motion = MotionCommand::DRIVE;
-        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.drive.velocity)
-            && JsonValueReader::readInt16(payload["turn"], command.payload.motion.drive.turn);
-    }
-    if (strcmp(commandName, "driveFor") == 0) {
-        command.command.motion = MotionCommand::DRIVE_FOR;
-        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.driveFor.velocity)
-            && JsonValueReader::readInt16(payload["turn"], command.payload.motion.driveFor.turn)
-            && JsonValueReader::readUint32(payload["durationMs"], command.payload.motion.driveFor.durationMs);
-    }
-    if (strcmp(commandName, "driveDistance") == 0) {
-        command.command.motion = MotionCommand::DRIVE_DISTANCE;
-        return JsonValueReader::readInt16(payload["velocity"], command.payload.motion.driveDistance.velocity)
-            && JsonValueReader::readFloat(payload["distanceMeters"], command.payload.motion.driveDistance.distanceMeters);
-    }
-    if (strcmp(commandName, "rotateTo") == 0) {
-        command.command.motion = MotionCommand::ROTATE_TO;
-        return JsonValueReader::readFloat(payload["angleDegrees"], command.payload.motion.rotate.angleDegrees)
-            && JsonValueReader::readUint8(payload["speed"], command.payload.motion.rotate.speed);
-    }
-    if (strcmp(commandName, "rotateBy") == 0) {
-        command.command.motion = MotionCommand::ROTATE_BY;
-        return JsonValueReader::readFloat(payload["angleDegrees"], command.payload.motion.rotate.angleDegrees)
-            && JsonValueReader::readUint8(payload["speed"], command.payload.motion.rotate.speed);
-    }
-    return false;
 }

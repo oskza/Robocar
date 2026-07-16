@@ -3,10 +3,7 @@
 #include <ArduinoJson.h>
 #include "../../MotionSnapshot.h"
 
-class MotionSnapshotJsonWriter {
-private:
-    static const char *_stateToString(MotionState state);
-public:
-    static void write(JsonObject json, const MotionSnapshot &snapshot);
-};
+namespace MotionSnapshotJsonWriter {
+    void write(JsonObject json, const MotionSnapshot &snapshot);
+}
 #endif
