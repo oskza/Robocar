@@ -2,17 +2,25 @@
 #include <string.h>
 
 namespace SystemCommandJsonReader {
-    bool read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command) {
+    bool read(const char *command, JsonObjectConst payload, SystemCommand &out) {
         (void)payload;
-        command.domain = CommandDomain::SYSTEM;
-        if (strcmp(commandName, "restart") == 0) {
-            command.command.system = SystemCommand::RESTART;
+
+        if (command == nullptr)
+            return false;
+
+        out = {};
+
+        if (strcmp(command, "restart") == 0) {
+            out.type = SystemCommandType::RESTART;
             return true;
         }
-        if (strcmp(commandName, "factoryReset") == 0) {
-            command.command.system = SystemCommand::FACTORY_RESET;
+
+        if (strcmp(command, "factoryReset") == 0) {
+            out.type = SystemCommandType::FACTORY_RESET;
             return true;
         }
+
+        out.type = SystemCommandType::UNKNOWN;
         return false;
     }
 }

@@ -5,11 +5,11 @@
 namespace SystemCommandHandler {
     bool execute(SystemCommand command, const SystemCommandPayload &payload, CommandResponse &response) {
         (void)payload;
-        switch (command) {
-            case SystemCommand::RESTART:
+        switch (command.type) {
+            case SystemCommandType::RESTART:
                 CommandResponseBuilder::ack(response, CommandPostAction::RESTART);
                 return true;
-            case SystemCommand::FACTORY_RESET:
+            case SystemCommandType::FACTORY_RESET:
                 CommandResponseBuilder::ack(response, CommandPostAction::FACTORY_RESET);
                 return true;
         }

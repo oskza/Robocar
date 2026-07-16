@@ -1,9 +1,9 @@
 #ifndef SYSTEM_COMMAND_JSON_READER_H
 #define SYSTEM_COMMAND_JSON_READER_H
 #include <ArduinoJson.h>
-#include "command/CommandEnvelope.h"
+#include "../../SystemCommand.h"
 
 namespace SystemCommandJsonReader {
-    bool read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command);
+    bool read(const char *command, JsonObjectConst payload, SystemCommand &out);
 }
 #endif

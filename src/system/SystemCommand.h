@@ -2,9 +2,16 @@
 #define SYSTEM_COMMAND_H
 #include <stdint.h>
 
-enum class SystemCommand : uint8_t {
-    RESTART, FACTORY_RESET
+enum class SystemCommandType : uint8_t {
+    UNKNOWN,
+    RESTART,
+    FACTORY_RESET
 };
 
 struct SystemCommandPayload {};
+
+struct SystemCommand {
+    SystemCommandType type = SystemCommandType::UNKNOWN;
+    SystemCommandPayload payload{};
+};
 #endif
