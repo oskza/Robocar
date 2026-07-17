@@ -40,14 +40,22 @@ namespace {
     }
 
     bool routeCommand(const char *domain, const char *commandName, JsonObjectConst payload, CommandEnvelope &command) {
-        if (strcmp(domain, DOMAIN_ROBOT) == 0)
+        if (strcmp(domain, DOMAIN_ROBOT) == 0) {
+            command.domain = CommandDomain::ROBOT;
             return RobotCommandJsonReader::read(commandName, payload, command);
-        if (strcmp(domain, DOMAIN_SYSTEM) == 0)
+        }
+        if (strcmp(domain, DOMAIN_SYSTEM) == 0) {
+            command.domain = CommandDomain::SYSTEM;
             return SystemCommandJsonReader::read(commandName, payload, command);
-        if (strcmp(domain, DOMAIN_MOTION) == 0)
+        }
+        if (strcmp(domain, DOMAIN_MOTION) == 0) {
+            command.domain = CommandDomain::MOTION;
             return MotionCommandJsonReader::read(commandName, payload, command);
-        if (strcmp(domain, DOMAIN_WIFI) == 0)
+        }
+        if (strcmp(domain, DOMAIN_WIFI) == 0) {
+            command.domain = CommandDomain::WIFI;
             return WifiCommandJsonReader::read(commandName, payload, command);
+        }
         return false;
     }
 }
