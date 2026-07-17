@@ -1,6 +1,6 @@
 #include "RobotSnapshotJsonWriter.h"
 #include "system/json/writer/SystemSnapshotJsonWriter.h"
-#include "power/json/PowerSnapshotJsonWriter.h"
+#include "power/json/writer/PowerSnapshotJsonWriter.h"
 #include "motion/json/writer/MotionSnapshotJsonWriter.h"
 #include "network/json/writer/WifiSnapshotJsonWriter.h"
 
