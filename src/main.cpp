@@ -37,8 +37,8 @@ MotorDriver rightMotor(
     MOTOR_R_PWM_CHANNEL
 );
 
-WheelOutputController leftWheel(leftMotor);
-WheelOutputController rightWheel(rightMotor);
+WheelActuator leftWheel(leftMotor);
+WheelActuator rightWheel(rightMotor);
 
 DifferentialDrive differential(leftWheel, rightWheel);
 
