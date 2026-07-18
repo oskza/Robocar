@@ -15,9 +15,8 @@ bool OtaService::begin(const char *hostname) {
 }
 
 void OtaService::update() {
-    if (!_started)
-        return;
-    ArduinoOTA.handle();
+    if (_started)
+        ArduinoOTA.handle();
 }
 
 bool OtaService::isStarted() const { return _started; }

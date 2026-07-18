@@ -1,3 +1,5 @@
+#ifndef OTA_SERVICE_H
+#define OTA_SERVICE_H
 class OtaService {
 private:
     bool _started;
@@ -7,3 +9,4 @@ public:
     void update();
     bool isStarted() const;
 };
+#endif

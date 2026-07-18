@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <WebSocketServer.h>
-
 #include "command/CommandDispatcher.h"
 #include "command/CommandProcessor.h"
 #include "hardware/RobotHardwareConfig.h"
@@ -94,14 +93,11 @@ namespace {
         WifiCredentials &accessPointCredentials
     ) {
         bool ok = true;
-
         ok &= robotStorage.loadConfig(robotConfig);
         ok &= motionStorage.loadConfig(motionConfig);
-
         ok &= wifiStorage.loadConfig(wifiConfig);
         ok &= wifiStorage.loadStationCredentials(stationCredentials);
         ok &= wifiStorage.loadAccessPointCredentials(accessPointCredentials);
-
         return ok;
     }
 }
