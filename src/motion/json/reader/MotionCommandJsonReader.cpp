@@ -1,6 +1,6 @@
 #include "MotionCommandJsonReader.h"
 #include <string.h>
-#include "json/JsonValueReader.h"
+#include <JsonValueReader.h>
 
 namespace {
     bool readConfig(JsonObjectConst json, MotionConfig &config) {
@@ -101,7 +101,6 @@ namespace MotionCommandJsonReader {
             return readRotate(payload, out.payload.rotate);
         }
 
-        out.type = MotionCommandType::UNKNOWN;
         return false;
     }
 }

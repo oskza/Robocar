@@ -1,21 +1,26 @@
 #include "WifiDefaults.h"
-#include <cstring>
+#include <string.h>
 
-void WifiDefaults::applyConfig(WifiConfig &cfg) {
-    cfg.mode = WifiMode::STA;
-    strlcpy(cfg.hostname, "Robocar", sizeof(cfg.hostname));
-    cfg.dhcp = true;
-    cfg.staticIp = {};
-    cfg.fallbackToAccessPoint = true;
-    cfg.reconnectIntervalMs = 5000;
-}
+namespace WifiDefaults {
+    WifiConfig config() {
+        WifiConfig config{};
+        config.mode = WifiMode::STA;
+        strlcpy(config.hostname, "Robocar", sizeof(config.hostname));
+        config.accessPointFallback = true;
+        config.maxReconnectAttempts = 3;
+        config.reconnectIntervalMs = 5000;
+        config.stationConnectTimeoutMs = 15000;
+        config.dhcp = true;
+        config.staticIp = {};
+        return config;
+    }
 
-void WifiDefaults::applyStationCredentials(WifiCredentials &credentials) {
-    credentials.ssid[0] = '\0';
-    credentials.password[0] = '\0';
-}
+    WifiCredentials stationCredentials() { return {}; }
 
-void WifiDefaults::applyAccessPointCredentials(WifiCredentials &credentials) {
-    strlcpy(credentials.ssid, "Robocar", sizeof(credentials.ssid));
-    strlcpy(credentials.password, "12345678", sizeof(credentials.password));
+    WifiCredentials accessPointCredentials() {
+        WifiCredentials credentials{};
+        strlcpy(credentials.ssid, "Robocar", sizeof(credentials.ssid));
+        strlcpy(credentials.password, "12345678", sizeof(credentials.password));
+        return credentials;
+    }
 }

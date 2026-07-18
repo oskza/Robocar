@@ -2,9 +2,8 @@
 #define WIFI_MODE_STRINGS_H
 #include "WifiMode.h"
 
-class WifiModeStrings {
-public:
-    static const char *toString(WifiMode mode);
-    static bool fromString(const char *text, WifiMode &mode);
-};
+namespace WifiModeStrings {
+    const char *toString(WifiMode mode);
+    bool fromString(const char *text, WifiMode &mode);
+}
 #endif

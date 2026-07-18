@@ -1,7 +1,10 @@
 #include "RobotDefaults.h"
-
-void RobotDefaults::applyConfig(RobotConfig &cfg) {
-    cfg.telemetryEnabled = true;
-    cfg.motionUpdateIntervalMs = 50;
-    cfg.wifiUpdateIntervalMs = 3000;
+namespace RobotDefaults {
+    RobotConfig config() {
+        RobotConfig config{};
+        config.telemetryEnabled = true;
+        config.motionUpdateIntervalMs = 50;
+        config.wifiUpdateIntervalMs = 100;
+        return config;
+    }
 }

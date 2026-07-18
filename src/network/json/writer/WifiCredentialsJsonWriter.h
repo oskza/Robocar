@@ -4,9 +4,7 @@
 #include <ArduinoJson.h>
 #include "../../WifiCredentials.h"
 
-class WifiCredentialsJsonWriter {
-public:
-    static void write(JsonObject json, const WifiCredentials &credentials);
+namespace WifiCredentialsJsonWriter {
+    void write(JsonObject json, const WifiCredentials &credentials);
 };
-
 #endif

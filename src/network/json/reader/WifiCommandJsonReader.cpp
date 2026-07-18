@@ -1,76 +1,93 @@
 #include "WifiCommandJsonReader.h"
 #include <string.h>
-#include "json/JsonValueReader.h"
+#include <JsonValueReader.h>
 #include "../../WifiModeStrings.h"
 
-bool WifiCommandJsonReader::_readConfig(JsonObjectConst json, WifiConfig &cfg) {
-    JsonVariantConst modeValue = json["mode"];
-    if (!(modeValue.is<const char*>() && WifiModeStrings::fromString(modeValue.as<const char*>(), cfg.mode)))
-        return false;
-    if (!JsonValueReader::readCString(json["hostname"], cfg.hostname, sizeof(cfg.hostname)))
-        return false;
-    if (!JsonValueReader::readBool(json["fallbackToAccessPoint"], cfg.fallbackToAccessPoint))
-        return false;
-    if (!JsonValueReader::readUint32(json["reconnectIntervalMs"], cfg.reconnectIntervalMs))
-        return false;
-    if (!JsonValueReader::readBool(json["dhcp"], cfg.dhcp))
-        return false;
-    if (cfg.dhcp)
-        return true;
-    JsonVariantConst staticIp = json["staticIp"];
-    return staticIp.is<JsonObjectConst>()
-        && JsonValueReader::readIpAddress(staticIp["ip"], cfg.staticIp.ip)
-        && JsonValueReader::readIpAddress(staticIp["gateway"], cfg.staticIp.gateway)
-        && JsonValueReader::readIpAddress(staticIp["subnet"], cfg.staticIp.subnet)
-        && JsonValueReader::readIpAddress(staticIp["primaryDns"], cfg.staticIp.primaryDns)
-        && JsonValueReader::readIpAddress(staticIp["secondaryDns"], cfg.staticIp.secondaryDns);
+namespace {
+    bool readStaticIpConfig(JsonObjectConst json, WifiStaticIpConfig &config) {
+        return JsonValueReader::readIpAddress(json["ip"], config.ip)
+            && JsonValueReader::readIpAddress(json["gateway"], config.gateway)
+            && JsonValueReader::readIpAddress(json["subnet"], config.subnet)
+            && JsonValueReader::readIpAddress(json["primaryDns"], config.primaryDns)
+            && JsonValueReader::readIpAddress(json["secondaryDns"], config.secondaryDns);
+    }
+
+    bool readConfig(JsonObjectConst json, WifiConfig &config) {
+        const JsonVariantConst modeValue = json["mode"];
+        if (!modeValue.is<const char *>())
+            return false;
+        if (!WifiModeStrings::fromString(modeValue.as<const char*>(), config.mode))
+            return false;
+        if (!JsonValueReader::readCString(json["hostname"], config.hostname, sizeof(config.hostname)))
+            return false;
+        if (!JsonValueReader::readBool(json["accessPointFallback"], config.accessPointFallback))
+            return false;
+        if (!JsonValueReader::readUint32(json["maxReconnectAttempts"], config.maxReconnectAttempts))
+            return false;
+        if (!JsonValueReader::readUint32(json["reconnectIntervalMs"], config.reconnectIntervalMs))
+            return false;
+        if (!JsonValueReader::readUint32(json["stationConnectTimeoutMs"], config.stationConnectTimeoutMs))
+            return false;
+        if (!JsonValueReader::readBool(json["dhcp"], config.dhcp))
+            return false;
+        if (config.dhcp) {
+            config.staticIp = {};
+            return true;
+        }
+        const JsonVariantConst staticIpValue = json["staticIp"];
+        return (staticIpValue.is<JsonObjectConst>())
+            ? readStaticIpConfig(staticIpValue.as<JsonObjectConst>(), config.staticIp)
+            : false;
+    }
+
+    bool readCredentials(JsonObjectConst json, WifiCredentials &credentials) {
+        return JsonValueReader::readCString(json["ssid"], credentials.ssid, sizeof(credentials.ssid))
+            && JsonValueReader::readCString(json["password"], credentials.password, sizeof(credentials.password));
+    }
 }
 
-bool WifiCommandJsonReader::_readCredentials(JsonObjectConst json, WifiCredentials &creds) {
-    return JsonValueReader::readCString(json["ssid"], creds.ssid, sizeof(creds.ssid))
-        && JsonValueReader::readCString(json["password"], creds.password, sizeof(creds.password));
-}
-
-bool WifiCommandJsonReader::read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command) {
-    if (commandName == nullptr)
+namespace WifiCommandJsonReader {
+    bool read(const char *command, JsonObjectConst payload, WifiCommand &out) {
+        if (command == nullptr)
+            return false;
+        out.type = WifiCommandType::UNKNOWN;
+        if (strcmp(command, "getConfig") == 0) {
+            out.type = WifiCommandType::GET_CONFIG;
+            return true;
+        }
+        if (strcmp(command, "setConfig") == 0) {
+            out.type = WifiCommandType::SET_CONFIG;
+            return readConfig(payload, out.payload.config);
+        }
+        if (strcmp(command, "resetConfig") == 0) {
+            out.type = WifiCommandType::RESET_CONFIG;
+            return true;
+        }
+        if (strcmp(command, "setStationCredentials") == 0) {
+            out.type = WifiCommandType::SET_STATION_CREDENTIALS;
+            return readCredentials(payload, out.payload.credentials);
+        }
+        if (strcmp(command, "resetStationCredentials") == 0) {
+            out.type = WifiCommandType::RESET_STATION_CREDENTIALS;
+            return true;
+        }
+        if (strcmp(command, "getAccessPointCredentials") == 0) {
+            out.type = WifiCommandType::GET_ACCESS_POINT_CREDENTIALS;
+            return true;
+        }
+        if (strcmp(command, "setAccessPointCredentials") == 0) {
+            out.type = WifiCommandType::SET_ACCESS_POINT_CREDENTIALS;
+            return readCredentials(payload, out.payload.credentials);
+        }
+        if (strcmp(command, "resetAccessPointCredentials") == 0) {
+            out.type =
+                WifiCommandType::RESET_ACCESS_POINT_CREDENTIALS;
+            return true;
+        }
+        if (strcmp(command, "reset") == 0) {
+            out.type = WifiCommandType::RESET_ALL;
+            return true;
+        }
         return false;
-    command.domain = CommandDomain::WIFI;
-    if (strcmp(commandName, "getConfig") == 0) {
-        command.command.wifi = WifiCommand::GET_CONFIG;
-        return true;
     }
-    if (strcmp(commandName, "setConfig") == 0) {
-        command.command.wifi = WifiCommand::SET_CONFIG;
-        WifiConfig &cfg = command.payload.wifi.cfg;
-        return _readConfig(payload, cfg);
-    }
-    if (strcmp(commandName, "resetConfig") == 0) {
-        command.command.wifi = WifiCommand::RESET_CONFIG;
-        return true;
-    }
-    if (strcmp(commandName, "setStationCredentials") == 0) {
-        command.command.wifi = WifiCommand::SET_STATION_CREDENTIALS;
-        return _readCredentials(payload, command.payload.wifi.credentials);
-    }
-    if (strcmp(commandName, "resetStationCredentials") == 0) {
-        command.command.wifi = WifiCommand::RESET_STATION_CREDENTIALS;
-        return true;
-    }
-    if (strcmp(commandName, "getAccessPointCredentials") == 0) {
-        command.command.wifi = WifiCommand::GET_ACCESS_POINT_CREDENTIALS;
-        return true;
-    }
-    if (strcmp(commandName, "setAccessPointCredentials") == 0) {
-        command.command.wifi = WifiCommand::SET_ACCESS_POINT_CREDENTIALS;
-        return _readCredentials(payload, command.payload.wifi.credentials);
-    }
-    if (strcmp(commandName, "resetAccessPointCredentials") == 0) {
-        command.command.wifi = WifiCommand::RESET_ACCESS_POINT_CREDENTIALS;
-        return true;
-    }
-    if (strcmp(commandName, "reset") == 0) {
-        command.command.wifi = WifiCommand::RESET_ALL;
-        return true;
-    }
-    return false;
 }

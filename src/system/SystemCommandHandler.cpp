@@ -3,8 +3,7 @@
 #include "command/CommandResponseBuilder.h"
 
 namespace SystemCommandHandler {
-    bool execute(SystemCommand command, const SystemCommandPayload &payload, CommandResponse &response) {
-        (void)payload;
+    bool execute(SystemCommand command, CommandResponse &response) {
         switch (command.type) {
             case SystemCommandType::RESTART:
                 CommandResponseBuilder::ack(response, CommandPostAction::RESTART);

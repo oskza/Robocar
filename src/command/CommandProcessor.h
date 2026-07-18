@@ -1,16 +1,17 @@
 #ifndef COMMAND_PROCESSOR_H
 #define COMMAND_PROCESSOR_H
+#include <stddef.h>
 #include "CommandDispatcher.h"
 
 class CommandProcessor {
 private:
-    CommandDispatcher _dispatcher;
+    CommandDispatcher &_dispatcher;
 public:
-    explicit CommandProcessor(Robot &robot);
+    explicit CommandProcessor(CommandDispatcher &dispatcher);
     bool handle(
         const char *request,
         size_t requestLength,
-        char *response,
+        char *responseBuffer,
         size_t responseCapacity
     );
 };

@@ -3,6 +3,10 @@
 #include <stdint.h>
 
 enum class CommandDomain : uint8_t {
-    ROBOT, SYSTEM, WIFI, MOTION
+    UNKNOWN,
+    ROBOT,
+    SYSTEM,
+    MOTION,
+    WIFI
 };
 #endif

@@ -4,6 +4,6 @@
 #include "command/CommandResponse.h"
 
 namespace SystemCommandHandler {
-    bool execute(SystemCommand command, const SystemCommandPayload &payload, CommandResponse &response);
+    bool execute(SystemCommand command, CommandResponse &response);
 }
 #endif

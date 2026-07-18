@@ -3,10 +3,9 @@
 #include "WifiConfig.h"
 #include "WifiCredentials.h"
 
-class WifiDefaults {
-public:
-    static void applyConfig(WifiConfig &cfg);
-    static void applyStationCredentials(WifiCredentials &credentials);
-    static void applyAccessPointCredentials(WifiCredentials &credentials);
+namespace WifiDefaults {
+    WifiConfig config();
+    WifiCredentials stationCredentials();
+    WifiCredentials accessPointCredentials();
 };
 #endif

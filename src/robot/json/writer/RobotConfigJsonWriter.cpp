@@ -1,7 +1,9 @@
 #include "RobotConfigJsonWriter.h"
 
-void RobotConfigJsonWriter::write(JsonObject json, const RobotConfig &cfg) {
-    json["telemetryEnabled"] = cfg.telemetryEnabled;
-    json["motionUpdateIntervalMs"] = cfg.motionUpdateIntervalMs;
-    json["wifiUpdateIntervalMs"] = cfg.wifiUpdateIntervalMs;
+namespace RobotConfigJsonWriter {
+    void write(JsonObject json, const RobotConfig &config) {
+        json["telemetryEnabled"] = config.telemetryEnabled;
+        json["motionUpdateIntervalMs"] = config.motionUpdateIntervalMs;
+        json["wifiUpdateIntervalMs"] = config.wifiUpdateIntervalMs;
+    }
 }

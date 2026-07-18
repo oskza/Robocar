@@ -1,16 +1,11 @@
 #ifndef ROBOT_COMMAND_HANDLER_H
 #define ROBOT_COMMAND_HANDLER_H
-#include "command/CommandResponseBuilder.h"
+#include "Robot.h"
 #include "RobotCommand.h"
-#include "robot/Robot.h"
+#include "RobotStorage.h"
+#include "command/CommandResponse.h"
 
-class RobotCommandHandler {
-public:
-    static bool execute(
-        Robot &robot,
-        RobotCommand command,
-        const RobotCommandPayload &payload,
-        CommandResponse &response
-    );
-};
+namespace RobotCommandHandler {
+    bool execute(Robot &robot, RobotStorage &storage, const RobotCommand &command, CommandResponse &response);
+}
 #endif

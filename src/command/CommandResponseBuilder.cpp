@@ -1,65 +1,54 @@
 #include "CommandResponseBuilder.h"
 
-void CommandResponseBuilder::ack(CommandResponse &response, CommandPostAction postAction) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::ACK;
-    response.error = CommandError::NONE;
-    response.postAction = postAction;
+namespace {
+    void success(CommandResponse &response, CommandResponseType type) {
+        response.status = CommandResponseStatus::OK;
+        response.type = type;
+        response.error = CommandError::NONE;
+        response.postAction = CommandPostAction::NONE;
+    }
 }
 
-void CommandResponseBuilder::error(CommandResponse &response, CommandError error) {
-    response.status = CommandResponseStatus::ERROR;
-    response.type = CommandResponseType::ERROR;
-    response.error = error;
-    response.postAction = CommandPostAction::NONE;
-}
+namespace CommandResponseBuilder {
+    void ack(CommandResponse &response, CommandPostAction postAction) {
+        success(response, CommandResponseType::ACK);
+        response.postAction = postAction;
+    }
 
-void CommandResponseBuilder::status(CommandResponse &response, const RobotSnapshot &snapshot) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::ROBOT_STATUS;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.robot = snapshot;
-}
+    void error(CommandResponse &response, CommandError error) {
+        response.status = CommandResponseStatus::ERROR;
+        response.type = CommandResponseType::ERROR;
+        response.error = error;
+        response.postAction = CommandPostAction::NONE;
+    }
 
-void CommandResponseBuilder::status(CommandResponse &response, const MotionSnapshot &snapshot) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::MOTION_STATUS;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.motion = snapshot;
-}
+    void status(CommandResponse &response, const RobotSnapshot &snapshot) {
+        success(response, CommandResponseType::ROBOT_STATUS);
+        response.payload.robot = snapshot;
+    }
 
-void CommandResponseBuilder::config(CommandResponse &response, const RobotConfig &config) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::ROBOT_CONFIG;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.robotConfig = config;
-}
+    void status(CommandResponse &response, const MotionSnapshot &snapshot) {
+        success(response, CommandResponseType::MOTION_STATUS);
+        response.payload.motion = snapshot;
+    }
 
-void CommandResponseBuilder::config(CommandResponse &response, const MotionConfig &config) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::MOTION_CONFIG;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.motionConfig = config;
-}
+    void config(CommandResponse &response, const RobotConfig &config) {
+        success(response, CommandResponseType::ROBOT_CONFIG);
+        response.payload.robotConfig = config;
+    }
 
-void CommandResponseBuilder::config(CommandResponse &response, const WifiConfig &config) {
-    response.status = CommandResponseStatus::OK;
-    response.type = CommandResponseType::WIFI_CONFIG;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.wifiConfig = config;
-}
+    void config(CommandResponse &response, const MotionConfig &config) {
+        success(response, CommandResponseType::MOTION_CONFIG);
+        response.payload.motionConfig = config;
+    }
 
-void CommandResponseBuilder::credentials(CommandResponse &response, const WifiCredentials &credentials, bool accessPoint) {
-    response.status = CommandResponseStatus::OK;
-    response.type = (accessPoint)
-        ? CommandResponseType::WIFI_ACCESS_POINT_CREDENTIALS
-        : CommandResponseType::WIFI_STATION_CREDENTIALS;
-    response.error = CommandError::NONE;
-    response.postAction = CommandPostAction::NONE;
-    response.payload.wifiCredentials = credentials;
+    void config(CommandResponse &response, const WifiConfig &config) {
+        success(response, CommandResponseType::WIFI_CONFIG);
+        response.payload.wifiConfig = config;
+    }
+
+    void credentials(CommandResponse &response, const WifiCredentials &credentials) {
+        success(response, CommandResponseType::WIFI_CREDENTIALS);
+        response.payload.wifiCredentials = credentials;
+    }
 }

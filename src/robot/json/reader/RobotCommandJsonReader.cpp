@@ -1,41 +1,44 @@
 #include "RobotCommandJsonReader.h"
 #include <string.h>
-#include "json/JsonValueReader.h"
+#include <JsonValueReader.h>
 
-bool RobotCommandJsonReader::_readConfig(JsonObjectConst json, RobotConfig &cfg) {
-    return JsonValueReader::readBool(json["telemetryEnabled"], cfg.telemetryEnabled)
-        && JsonValueReader::readUint32(json["motionUpdateIntervalMs"], cfg.motionUpdateIntervalMs)
-        && JsonValueReader::readUint32(json["wifiUpdateIntervalMs"], cfg.wifiUpdateIntervalMs);
+namespace {
+    bool readConfig(JsonObjectConst json, RobotConfig &config) {
+        return JsonValueReader::readBool(json["telemetryEnabled"], config.telemetryEnabled)
+            && JsonValueReader::readUint32(json["motionUpdateIntervalMs"], config.motionUpdateIntervalMs)
+            && JsonValueReader::readUint32(json["wifiUpdateIntervalMs"], config.wifiUpdateIntervalMs);
+    }
 }
 
-bool RobotCommandJsonReader::read(const char *commandName, JsonObjectConst payload, CommandEnvelope &command) {
-    if (commandName == nullptr)
+namespace RobotCommandJsonReader {
+    bool read(const char *command, JsonObjectConst payload, RobotCommand &out) {
+        if (command == nullptr)
+            return false;
+        out.type = RobotCommandType::UNKNOWN;
+        if (strcmp(command, "status") == 0) {
+            out.type = RobotCommandType::STATUS;
+            return true;
+        }
+        if (strcmp(command, "getConfig") == 0) {
+            out.type = RobotCommandType::GET_CONFIG;
+            return true;
+        }
+        if (strcmp(command, "setConfig") == 0) {
+            out.type = RobotCommandType::SET_CONFIG;
+            return readConfig(payload, out.payload.config);
+        }
+        if (strcmp(command, "resetConfig") == 0) {
+            out.type = RobotCommandType::RESET_CONFIG;
+            return true;
+        }
+        if (strcmp(command, "enableTelemetry") == 0) {
+            out.type = RobotCommandType::ENABLE_TELEMETRY;
+            return true;
+        }
+        if (strcmp(command, "disableTelemetry") == 0) {
+            out.type = RobotCommandType::DISABLE_TELEMETRY;
+            return true;
+        }
         return false;
-    command.domain = CommandDomain::ROBOT;
-    if (strcmp(commandName, "status") == 0) {
-        command.command.robot = RobotCommand::STATUS;
-        return true;
     }
-    if (strcmp(commandName, "getConfig") == 0) {
-        command.command.robot = RobotCommand::GET_CONFIG;
-        return true;
-    }
-    if (strcmp(commandName, "setConfig") == 0) {
-        command.command.robot = RobotCommand::SET_CONFIG;
-        RobotConfig &cfg = command.payload.robot.cfg;
-        return _readConfig(payload, cfg);
-    }
-    if (strcmp(commandName, "reset") == 0) {
-        command.command.robot = RobotCommand::RESET_CONFIG;
-        return true;
-    }
-    if (strcmp(commandName, "enableTelemetry") == 0) {
-        command.command.robot = RobotCommand::ENABLE_TELEMETRY;
-        return true;
-    }
-    if (strcmp(commandName, "disableTelemetry") == 0) {
-        command.command.robot = RobotCommand::DISABLE_TELEMETRY;
-        return true;
-    }
-    return false;
 }

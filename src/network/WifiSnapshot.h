@@ -1,27 +1,24 @@
 #ifndef WIFI_SNAPSHOT_H
 #define WIFI_SNAPSHOT_H
-#include <IPAddress.h>
 #include "WifiConfig.h"
 #include "WifiCredentials.h"
-#include "WifiMode.h"
-#include "WifiStationState.h"
-#include "WifiAccessPointState.h"
+#include "WifiState.h"
 
 struct WifiSnapshot {
-    WifiMode mode;
-    char hostname[WifiConfig::HOSTNAME_MAX_LEN + 1];
+    WifiMode mode = WifiMode::OFF;
+    char hostname[WifiConfig::HOSTNAME_MAX_LEN + 1]{};
     struct WifiStationSnapshot {
-        WifiStationState state;
-        IPAddress ip;
-        char ssid[WifiCredentials::SSID_MAX_LEN + 1];
-        int8_t rssi;
-        uint32_t reconnectAttempts;
+        WifiStationState state = WifiStationState::OFF;
+        IPAddress ip{};
+        char ssid[WifiCredentials::SSID_MAX_LEN + 1]{};
+        int8_t rssi = -127;
+        uint32_t reconnectAttempts = 0;
     } station;
     struct WifiAccessPointSnapshot {
-        WifiAccessPointState state;
-        IPAddress ip;
-        char ssid[WifiCredentials::SSID_MAX_LEN + 1];
-        uint8_t clients;
+        WifiAccessPointState state = WifiAccessPointState::OFF;
+        IPAddress ip{};
+        char ssid[WifiCredentials::SSID_MAX_LEN + 1]{};
+        uint8_t clients = 0;
     } accessPoint;
 };
 #endif

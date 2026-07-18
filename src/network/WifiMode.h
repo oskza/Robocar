@@ -3,6 +3,9 @@
 #include <stdint.h>
 
 enum class WifiMode : uint8_t {
-    OFF, STA, AP, APSTA
+    OFF,
+    STA,
+    AP,
+    APSTA
 };
 #endif

@@ -33,10 +33,7 @@ namespace MotionCommandHandler {
             case MotionCommandType::RESET_CONFIG: {
                 const MotionConfig config = MotionDefaults::config();
                 if (!storage.saveConfig(config)) {
-                    CommandResponseBuilder::error(
-                        response,
-                        CommandError::STORAGE_ERROR
-                    );
+                    CommandResponseBuilder::error(response, CommandError::STORAGE_ERROR);
                     return false;
                 }
                 motion.setConfig(config);

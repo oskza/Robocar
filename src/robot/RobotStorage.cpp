@@ -2,25 +2,21 @@
 #include "RobotDefaults.h"
 
 namespace {
-    constexpr const char *STORE_NAMESPACE = "app";
-    constexpr const char *KEY_CONFIG = "cfg";
+    constexpr char STORE_NAMESPACE[] = "app";
+    constexpr char KEY_CONFIG[] = "cfg";
 }
 
-bool RobotStorage::begin() { return _store.begin(STORE_NAMESPACE); }
+RobotStorage::RobotStorage() : _store(STORE_NAMESPACE) {}
 
-bool RobotStorage::loadConfig(RobotConfig &cfg) {
-    if (_store.load(KEY_CONFIG, &cfg, sizeof(cfg)))
+bool RobotStorage::loadConfig(RobotConfig &config) {
+    if (_store.load(KEY_CONFIG, &config, sizeof(config)))
         return true;
-    RobotDefaults::applyConfig(cfg);
-    return saveConfig(cfg);
+    config = RobotDefaults::config();
+    return saveConfig(config);
 }
 
-bool RobotStorage::saveConfig(const RobotConfig &cfg) {
-    return _store.save(KEY_CONFIG, &cfg, sizeof(cfg));
+bool RobotStorage::saveConfig(const RobotConfig &config) {
+    return _store.save(KEY_CONFIG, &config, sizeof(config));
 }
 
-bool RobotStorage::resetConfig() {
-    RobotConfig cfg{};
-    RobotDefaults::applyConfig(cfg);
-    return saveConfig(cfg);
-}
+bool RobotStorage::clear() { return _store.clear(); }

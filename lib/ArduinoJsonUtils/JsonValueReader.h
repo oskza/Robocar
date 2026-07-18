@@ -1,9 +1,8 @@
 #ifndef JSON_VALUE_READER_H
 #define JSON_VALUE_READER_H
+#include <stddef.h>
 #include <ArduinoJson.h>
 #include <IPAddress.h>
-#include <stddef.h>
-#include <stdint.h>
 
 namespace JsonValueReader {
     bool readBool(JsonVariantConst value, bool &out);

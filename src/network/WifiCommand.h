@@ -1,10 +1,11 @@
 #ifndef WIFI_COMMAND_H
 #define WIFI_COMMAND_H
-#include <stdint.h>
-#include "network/WifiConfig.h"
-#include "network/WifiCredentials.h"
+#include "WifiConfig.h"
+#include "WifiCredentials.h"
 
-enum class WifiCommand : uint8_t {
+enum class WifiCommandType : uint8_t {
+    UNKNOWN,
+
     GET_CONFIG,
     SET_CONFIG,
     RESET_CONFIG,
@@ -20,7 +21,12 @@ enum class WifiCommand : uint8_t {
 };
 
 struct WifiCommandPayload {
-    WifiConfig cfg;
+    WifiConfig config;
     WifiCredentials credentials;
+};
+
+struct WifiCommand {
+    WifiCommandType type = WifiCommandType::UNKNOWN;
+    WifiCommandPayload payload{};
 };
 #endif

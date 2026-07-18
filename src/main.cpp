@@ -1,100 +1,147 @@
 #include <Arduino.h>
 #include <WebSocketServer.h>
-#include "ota/OtaService.h"
-#include "websocket/WebSocketService.h"
-#include "telemetry/TelemetryService.h"
+
+#include "command/CommandDispatcher.h"
 #include "command/CommandProcessor.h"
 #include "hardware/RobotHardwareConfig.h"
+#include "motion/MotionStorage.h"
+#include "network/WifiStorage.h"
+#include "ota/OtaService.h"
 #include "robot/Robot.h"
+#include "robot/RobotStorage.h"
+#include "telemetry/TelemetryService.h"
+#include "websocket/WebSocketService.h"
 
 #ifndef MONITOR_SPEED
 #define MONITOR_SPEED 115200
 #endif
 
-#define WS_PORT 80
-#define WS_PATH "/ws"
+namespace {
+    constexpr uint16_t WS_PORT = 80;
+    constexpr char WS_PATH[] = "/ws";
+    constexpr uint32_t WS_BROADCAST_INTERVAL_MS = 3000;
 
-#define WS_BROADCAST_INTERVAL_MS 3000
+    using namespace RobotHardwareConfig;
 
-using namespace RobotHardwareConfig;
+    Ina226PowerMonitor powerMonitor(INA226_ADDRESS);
+    PowerService powerService(powerMonitor);
 
-Ina226PowerMonitor powerMonitor(INA226_ADDRESS);
-PowerService powerService(powerMonitor);
+    WifiController wifiController;
+    WifiStorage wifiStorage;
 
-WifiController wifiController;
+    MotorDriver leftMotor(
+        MOTOR_L_PWM_PIN,
+        MOTOR_L_NORM_PIN,
+        MOTOR_L_REV_PIN,
+        MOTOR_L_PWM_CHANNEL
+    );
 
-MotorDriver leftMotor(
-    MOTOR_L_PWM_PIN,
-    MOTOR_L_NORM_PIN,
-    MOTOR_L_REV_PIN,
-    MOTOR_L_PWM_CHANNEL
-);
+    MotorDriver rightMotor(
+        MOTOR_R_PWM_PIN,
+        MOTOR_R_NORM_PIN,
+        MOTOR_R_REV_PIN,
+        MOTOR_R_PWM_CHANNEL
+    );
 
-MotorDriver rightMotor(
-    MOTOR_R_PWM_PIN,
-    MOTOR_R_NORM_PIN,
-    MOTOR_R_REV_PIN,
-    MOTOR_R_PWM_CHANNEL
-);
+    WheelActuator leftWheel(leftMotor);
+    WheelActuator rightWheel(rightMotor);
 
-WheelActuator leftWheel(leftMotor);
-WheelActuator rightWheel(rightMotor);
+    DifferentialDrive differentialDrive(leftWheel, rightWheel);
 
-DifferentialDrive differential(leftWheel, rightWheel);
+    Encoder leftEncoder(ENCODER_L_PIN);
+    Encoder rightEncoder(ENCODER_R_PIN);
 
-Encoder leftEncoder(ENCODER_L_PIN);
-Encoder rightEncoder(ENCODER_R_PIN);
+    Odometry odometry(leftEncoder, rightEncoder);
 
-Odometry odometry(leftEncoder, rightEncoder);
+    Bmm150Compass compass;
 
-Bmm150Compass compass;
+    MotionController motionController(differentialDrive, odometry, compass);
 
-MotionController motionController(differential, odometry, compass);
+    MotionStorage motionStorage;
 
-WifiStorage wifiStorage;
-MotionStorage motionStorage;
-RobotStorage robotStorage;
+    Robot robot(powerService, wifiController, motionController);
 
-Robot robot(
-    powerService,
-    wifiController,
-    motionController,
-    wifiStorage,
-    motionStorage,
-    robotStorage
-);
+    RobotStorage robotStorage;
 
-WebSocketServer webSocketServer(WS_PORT, WS_PATH);
+    CommandDispatcher commandDispatcher(
+        robot,
+        robotStorage,
+        motionController,
+        motionStorage,
+        wifiController,
+        wifiStorage
+    );
 
-OtaService otaService;
+    CommandProcessor commandProcessor(commandDispatcher);
 
-CommandProcessor commandProcessor(robot);
+    WebSocketServer webSocketServer(WS_PORT, WS_PATH);
 
-WebSocketService webSocketService(webSocketServer, commandProcessor);
+    WebSocketService webSocketService(webSocketServer, commandProcessor);
 
-TelemetryService telemetryService(robot, webSocketServer, WS_BROADCAST_INTERVAL_MS);
+    TelemetryService telemetryService(robot, webSocketServer, WS_BROADCAST_INTERVAL_MS);
 
-void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
+    OtaService otaService;
 
-void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
+    void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
+
+    void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
+
+    bool loadConfiguration(
+        RobotConfig &robotConfig,
+        MotionConfig &motionConfig,
+        WifiConfig &wifiConfig,
+        WifiCredentials &stationCredentials,
+        WifiCredentials &accessPointCredentials
+    ) {
+        bool ok = true;
+
+        ok &= robotStorage.loadConfig(robotConfig);
+        ok &= motionStorage.loadConfig(motionConfig);
+
+        ok &= wifiStorage.loadConfig(wifiConfig);
+        ok &= wifiStorage.loadStationCredentials(stationCredentials);
+        ok &= wifiStorage.loadAccessPointCredentials(accessPointCredentials);
+
+        return ok;
+    }
+}
 
 void setup() {
+    Serial.begin(MONITOR_SPEED);
     leftEncoder.begin(onLeftEncoder);
     rightEncoder.begin(onRightEncoder);
-    robot.begin(
-        MOTOR_PWM_FREQ,
-        ENCODER_SLOTS,
-        INA226_MAX_CURRENT_AMPS,
-        INA226_SHUNT_OHMS
+    RobotConfig robotConfig{};
+    MotionConfig motionConfig{};
+    WifiConfig wifiConfig{};
+    WifiCredentials stationCredentials{};
+    WifiCredentials accessPointCredentials{};
+    const bool configurationLoaded = loadConfiguration(
+        robotConfig,
+        motionConfig,
+        wifiConfig,
+        stationCredentials,
+        accessPointCredentials
     );
-    otaService.begin(robot.getHostname());
+    const bool robotStarted = robot.begin(
+        robotConfig,
+        motionConfig,
+        wifiConfig,
+        stationCredentials,
+        accessPointCredentials
+    );
+    if (!configurationLoaded)
+        Serial.println("Failed to load one or more configurations");
+    if (!robotStarted)
+        Serial.println("Failed to initialize one or more robot components");
+    otaService.begin(wifiController.getHostname());
     webSocketService.begin();
 }
 
 void loop() {
+    const uint32_t nowMs = millis();
+    robot.update(nowMs);
     otaService.update();
-    robot.update();
     webSocketService.update();
     if (robot.isTelemetryEnabled())
-        telemetryService.update(robot.getUptimeMs());
+        telemetryService.update(nowMs);
 }

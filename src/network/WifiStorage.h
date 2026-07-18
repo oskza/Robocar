@@ -8,16 +8,13 @@ class WifiStorage {
 private:
     PreferencesStore _store;
 public:
-    bool begin();
-    bool loadConfig(WifiConfig &cfg);
-    bool saveConfig(const WifiConfig &cfg);
-    bool resetConfig();
+    WifiStorage();
+    bool loadConfig(WifiConfig &config);
+    bool saveConfig(const WifiConfig &config);
     bool loadStationCredentials(WifiCredentials &credentials);
     bool saveStationCredentials(const WifiCredentials &credentials);
-    bool resetStationCredentials();
     bool loadAccessPointCredentials(WifiCredentials &credentials);
     bool saveAccessPointCredentials(const WifiCredentials &credentials);
-    bool resetAccessPointCredentials();
-    bool resetAll();
+    bool clear();
 };
 #endif

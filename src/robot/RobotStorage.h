@@ -7,9 +7,9 @@ class RobotStorage {
 private:
     PreferencesStore _store;
 public:
-    bool begin();
-    bool loadConfig(RobotConfig &cfg);
-    bool saveConfig(const RobotConfig &cfg);
-    bool resetConfig();
+    RobotStorage();
+    bool loadConfig(RobotConfig &config);
+    bool saveConfig(const RobotConfig &config);
+    bool clear();
 };
 #endif

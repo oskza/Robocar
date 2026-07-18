@@ -1,12 +1,14 @@
 #include "RobotSnapshotJsonWriter.h"
-#include "system/json/writer/SystemSnapshotJsonWriter.h"
-#include "power/json/writer/PowerSnapshotJsonWriter.h"
 #include "motion/json/writer/MotionSnapshotJsonWriter.h"
 #include "network/json/writer/WifiSnapshotJsonWriter.h"
+#include "power/json/writer/PowerSnapshotJsonWriter.h"
+#include "system/json/writer/SystemSnapshotJsonWriter.h"
 
-void RobotSnapshotJsonWriter::write(JsonObject json, const RobotSnapshot &snapshot) {
-    SystemSnapshotJsonWriter::write(json["system"].to<JsonObject>(), snapshot.system);
-    PowerSnapshotJsonWriter::write(json["power"].to<JsonObject>(), snapshot.power);
-    MotionSnapshotJsonWriter::write(json["motion"].to<JsonObject>(), snapshot.motion);
-    WifiSnapshotJsonWriter::write(json["network"].to<JsonObject>(), snapshot.network);
+namespace RobotSnapshotJsonWriter {
+    void write(JsonObject json, const RobotSnapshot &snapshot) {
+        SystemSnapshotJsonWriter::write(json["system"].to<JsonObject>(), snapshot.system);
+        PowerSnapshotJsonWriter::write(json["power"].to<JsonObject>(), snapshot.power);
+        WifiSnapshotJsonWriter::write(json["wifi"].to<JsonObject>(), snapshot.wifi);
+        MotionSnapshotJsonWriter::write(json["motion"].to<JsonObject>(), snapshot.motion);
+    }
 }

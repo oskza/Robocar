@@ -1,45 +1,38 @@
 #include "CommandDispatcher.h"
 #include "CommandResponseBuilder.h"
-#include "robot/RobotCommandHandler.h"
-#include "system/SystemCommandHandler.h"
 #include "motion/MotionCommandHandler.h"
 #include "network/WifiCommandHandler.h"
+#include "robot/RobotCommandHandler.h"
+#include "system/SystemCommandHandler.h"
 
-CommandDispatcher::CommandDispatcher(Robot &robot) : _robot(robot) {}
+CommandDispatcher::CommandDispatcher(
+    Robot &robot,
+    RobotStorage &robotStorage,
+    MotionController &motion,
+    MotionStorage &motionStorage,
+    WifiController &wifi,
+    WifiStorage &wifiStorage
+)
+    : _robot(robot),
+      _robotStorage(robotStorage),
+      _motion(motion),
+      _motionStorage(motionStorage),
+      _wifi(wifi),
+      _wifiStorage(wifiStorage) {}
 
 bool CommandDispatcher::dispatch(const CommandEnvelope &command, CommandResponse &response) {
     response.id = command.id;
     switch (command.domain) {
         case CommandDomain::ROBOT:
-            return RobotCommandHandler::execute(
-                _robot,
-                command.command.robot,
-                command.payload.robot,
-                response
-            );
-
+            return RobotCommandHandler::execute(_robot, _robotStorage, command.robot, response);
         case CommandDomain::SYSTEM:
-            return SystemCommandHandler::execute(
-                command.command.system,
-                command.payload.system,
-                response
-            );
-
+            return SystemCommandHandler::execute(command.system, response);
         case CommandDomain::MOTION:
-            return MotionCommandHandler::execute(
-                _robot,
-                command.command.motion,
-                command.payload.motion,
-                response
-            );
-
+            return MotionCommandHandler::execute(_motion, _motionStorage, command.motion, response);
         case CommandDomain::WIFI:
-            return WifiCommandHandler::execute(
-                _robot,
-                command.command.wifi,
-                command.payload.wifi,
-                response
-            );
+            return WifiCommandHandler::execute(_wifi, _wifiStorage, command.wifi, response);
+        case CommandDomain::UNKNOWN:
+            break;
     }
     CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
     return false;

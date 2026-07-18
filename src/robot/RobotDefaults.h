@@ -2,8 +2,7 @@
 #define ROBOT_DEFAULTS_H
 #include "RobotConfig.h"
 
-class RobotDefaults {
-public:
-    static void applyConfig(RobotConfig &cfg);
-};
+namespace RobotDefaults {
+    RobotConfig config();
+}
 #endif

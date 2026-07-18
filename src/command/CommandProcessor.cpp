@@ -1,17 +1,27 @@
 #include "CommandProcessor.h"
+#include "CommandResponseBuilder.h"
 #include "json/CommandJsonParser.h"
 #include "json/CommandJsonSerializer.h"
-#include "CommandResponseBuilder.h"
 
-CommandProcessor::CommandProcessor(Robot &robot) : _dispatcher(robot) {}
+CommandProcessor::CommandProcessor(CommandDispatcher &dispatcher) : _dispatcher(dispatcher) {}
 
-bool CommandProcessor::handle(const char *request, size_t requestLength, char *responseBuffer, size_t responseCapacity) {
+bool CommandProcessor::handle(
+    const char *request,
+    size_t requestLength,
+    char *responseBuffer,
+    size_t responseCapacity
+) {
     CommandEnvelope command{};
+    const CommandError parseError = CommandJsonParser::parse(
+        request,
+        requestLength,
+        command
+    );
     CommandResponse response{};
-    if (!CommandJsonParser::parse(request, requestLength, command)) {
-        CommandResponseBuilder::error(response, CommandError::INVALID_COMMAND);
-        return CommandJsonSerializer::serialize(response, responseBuffer, responseCapacity);
-    }
-    _dispatcher.dispatch(command, response);
+    response.id = command.id;
+    if (parseError != CommandError::NONE)
+        CommandResponseBuilder::error(response, parseError);
+    else
+        _dispatcher.dispatch(command, response);
     return CommandJsonSerializer::serialize(response, responseBuffer, responseCapacity);
 }

@@ -2,7 +2,8 @@
 #define ROBOT_COMMAND_H
 #include "RobotConfig.h"
 
-enum class RobotCommand : uint8_t {
+enum class RobotCommandType : uint8_t {
+    UNKNOWN,
     STATUS,
     GET_CONFIG,
     SET_CONFIG,
@@ -12,6 +13,11 @@ enum class RobotCommand : uint8_t {
 };
 
 struct RobotCommandPayload {
-    RobotConfig cfg;
+    RobotConfig config{};
+};
+
+struct RobotCommand {
+    RobotCommandType type = RobotCommandType::UNKNOWN;
+    RobotCommandPayload payload{};
 };
 #endif
