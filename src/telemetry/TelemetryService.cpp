@@ -6,15 +6,14 @@ TelemetryService::TelemetryService(Robot &robot, WebSocketServer &server, uint32
     : _robot(robot),
       _server(server),
       _intervalMs(intervalMs),
-      _lastBroadcastMs(0),
+      _broadcastTimer{},
       _buffer{} {}
 
 void TelemetryService::update(uint32_t nowMs) {
     if (_intervalMs == 0
             || !_server.hasClients()
-            || nowMs - _lastBroadcastMs < _intervalMs)
+            || !_broadcastTimer.poll(nowMs, _intervalMs))
         return;
-    _lastBroadcastMs = nowMs;
     const RobotSnapshot snapshot = _robot.getSnapshot();
     JsonDocument document;
     document["type"] = "telemetry";

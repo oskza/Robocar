@@ -1,5 +1,4 @@
 #include "WifiController.h"
-
 #include <cstring>
 
 WifiController *WifiController::_instance = nullptr;
@@ -36,14 +35,13 @@ void WifiController::_handleWifiEvent(WiFiEvent_t event) {
             _stopStationTimers();
             break;
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            _stationConnectTimer.stop();
-            _reconnectTimer.stop();
-            _state.station = (_stationEnabled())
+            _stopStationTimers();
+            _state.station = _stationEnabled()
                 ? WifiStationState::DISCONNECTED
                 : WifiStationState::OFF;
             break;
         case ARDUINO_EVENT_WIFI_AP_START:
-            _state.accessPoint = (_accessPointEnabled())
+            _state.accessPoint = _accessPointEnabled()
                 ? WifiAccessPointState::ACTIVE
                 : WifiAccessPointState::OFF;
             break;
@@ -109,8 +107,7 @@ bool WifiController::_applyIpConfig() {
 }
 
 bool WifiController::_startStation() {
-    _stationConnectTimer.stop();
-    _reconnectTimer.stop();
+    _stopStationTimers();
     if (!_hasStationCredentials()) {
         _state.station = WifiStationState::OFF;
         return false;
@@ -120,7 +117,8 @@ bool WifiController::_startStation() {
         _state.station = WifiStationState::DISCONNECTED;
         return false;
     }
-    if (WiFi.begin(_stationCredentials.ssid, _stationCredentials.password) == WL_CONNECT_FAILED) {
+    const wl_status_t status = WiFi.begin(_stationCredentials.ssid, _stationCredentials.password);
+    if (status == WL_CONNECT_FAILED) {
         _state.station = WifiStationState::DISCONNECTED;
         return false;
     }
@@ -203,15 +201,15 @@ bool WifiController::_applyConfiguration() {
 }
 
 void WifiController::_updateConnecting(uint32_t nowMs) {
-    if (_state.station != WifiStationState::CONNECTING ||
-        _cfg.stationConnectTimeoutMs == 0) {
+    if (_state.station != WifiStationState::CONNECTING)
         return;
-    }
-    if (!_stationConnectTimer.active) {
+    if (_cfg.stationConnectTimeoutMs == 0)
+        return;
+    if (!_stationConnectTimer.isRunning()) {
         _stationConnectTimer.start(nowMs);
         return;
     }
-    if (!_stationConnectTimer.elapsed(nowMs, _cfg.stationConnectTimeoutMs))
+    if (!_stationConnectTimer.hasElapsed(nowMs, _cfg.stationConnectTimeoutMs))
         return;
     WiFi.disconnect(false, false);
     _state.station = WifiStationState::DISCONNECTED;
@@ -225,17 +223,23 @@ void WifiController::_updateConnecting(uint32_t nowMs) {
 }
 
 void WifiController::_updateReconnect(uint32_t nowMs) {
-    if (_state.station != WifiStationState::DISCONNECTED || _cfg.reconnectIntervalMs == 0)
+    if (_state.station != WifiStationState::DISCONNECTED)
         return;
-    if (!_reconnectTimer.active) {
+    if (_cfg.reconnectIntervalMs == 0)
+        return;
+    if (!_reconnectTimer.isRunning()) {
         _reconnectTimer.start(nowMs);
         return;
     }
-    if (!_reconnectTimer.elapsed(nowMs, _cfg.reconnectIntervalMs))
+    if (!_reconnectTimer.hasElapsed(nowMs, _cfg.reconnectIntervalMs))
         return;
+
     if (_cfg.maxReconnectAttempts > 0 && _reconnectAttempts >= _cfg.maxReconnectAttempts) {
-        if (_cfg.accessPointFallback && _stationConfigured())
+        _reconnectTimer.stop();
+        if (_cfg.accessPointFallback &&
+            _stationConfigured()) {
             _applyMode(WifiMode::AP);
+        }
         return;
     }
     ++_reconnectAttempts;
@@ -246,13 +250,13 @@ void WifiController::_updateReconnect(uint32_t nowMs) {
 }
 
 bool WifiController::begin(
-    const WifiConfig &config,
+    const WifiConfig &cfg,
     const WifiCredentials &stationCredentials,
     const WifiCredentials &accessPointCredentials
 ) {
     if (!_registerEventHandler())
         return false;
-    _cfg = config;
+    _cfg = cfg;
     _stationCredentials = stationCredentials;
     _accessPointCredentials = accessPointCredentials;
     _mode = WifiMode::OFF;

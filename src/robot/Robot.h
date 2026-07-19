@@ -1,5 +1,6 @@
 #ifndef ROBOT_H
 #define ROBOT_H
+#include <Timer.h>
 #include "RobotConfig.h"
 #include "RobotSnapshot.h"
 #include "motion/MotionController.h"
@@ -14,9 +15,9 @@ private:
     PowerService &_power;
     WifiController &_wifi;
     MotionController &_motion;
-    RobotConfig _config;
-    uint32_t _lastMotionUpdateMs;
-    uint32_t _lastWifiUpdateMs;
+    RobotConfig _cfg;
+    Timer _motionTimer;
+    Timer _wifiTimer;
 public:
     Robot(PowerService &power, WifiController &wifi, MotionController &motion);
     bool begin(

@@ -6,9 +6,9 @@ Robot::Robot(PowerService &power, WifiController &wifi, MotionController &motion
     : _power(power),
       _wifi(wifi),
       _motion(motion),
-      _config{},
-      _lastMotionUpdateMs(0),
-      _lastWifiUpdateMs(0) {}
+      _cfg{},
+      _motionTimer{},
+      _wifiTimer{} {}
 
 bool Robot::begin(
     const RobotConfig &robotConfig,
@@ -17,9 +17,9 @@ bool Robot::begin(
     const WifiCredentials &stationCredentials,
     const WifiCredentials &accessPointCredentials
 ) {
-    _config = robotConfig;
-    _lastMotionUpdateMs = 0;
-    _lastWifiUpdateMs = 0;
+    _cfg = robotConfig;
+    _motionTimer.stop();
+    _wifiTimer.stop();
     bool ok = true;
     ok &= _wifi.begin(wifiConfig, stationCredentials, accessPointCredentials);
     _motion.begin(motionConfig, RobotHardwareConfig::MOTOR_PWM_FREQ, RobotHardwareConfig::ENCODER_SLOTS);
@@ -28,14 +28,10 @@ bool Robot::begin(
 }
 
 void Robot::update(uint32_t nowMs) {
-    if (nowMs - _lastMotionUpdateMs >= _config.motionUpdateIntervalMs) {
-        _lastMotionUpdateMs = nowMs;
+    if (_motionTimer.poll(nowMs, _cfg.motionUpdateIntervalMs))
         _motion.update(nowMs);
-    }
-    if (nowMs - _lastWifiUpdateMs >= _config.wifiUpdateIntervalMs) {
-        _lastWifiUpdateMs = nowMs;
+    if (_wifiTimer.poll(nowMs, _cfg.wifiUpdateIntervalMs))
         _wifi.update(nowMs);
-    }
 }
 
 RobotSnapshot Robot::getSnapshot() {
@@ -47,10 +43,10 @@ RobotSnapshot Robot::getSnapshot() {
     return snapshot;
 }
 
-void Robot::getConfig(RobotConfig &config) const { config = _config; }
+void Robot::getConfig(RobotConfig &config) const { config = _cfg; }
 
-void Robot::setConfig(const RobotConfig &config) { _config = config; }
+void Robot::setConfig(const RobotConfig &config) { _cfg = config; }
 
 const char *Robot::getHostname() const { return _wifi.getHostname(); }
 
-bool Robot::isTelemetryEnabled() const { return _config.telemetryEnabled; }
+bool Robot::isTelemetryEnabled() const { return _cfg.telemetryEnabled; }

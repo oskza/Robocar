@@ -1,35 +1,21 @@
 #ifndef WIFI_CONTROLLER_H
 #define WIFI_CONTROLLER_H
 #include <WiFi.h>
-#include "WifiState.h"
+#include <Timer.h>
 #include "WifiConfig.h"
 #include "WifiCredentials.h"
 #include "WifiSnapshot.h"
+#include "WifiState.h"
 
 class WifiController {
 private:
-    struct TimerState {
-        uint32_t startedMs = 0;
-        bool active = false;
-        void start(uint32_t nowMs) {
-            startedMs = nowMs;
-            active = true;
-        }
-        void stop() {
-            startedMs = 0;
-            active = false;
-        }
-        bool elapsed(uint32_t nowMs, uint32_t durationMs) const {
-            return active && (nowMs - startedMs) >= durationMs;
-        }
-    };
     WifiConfig _cfg;
     WifiCredentials _stationCredentials;
     WifiCredentials _accessPointCredentials;
     WifiMode _mode;
     WifiState _state;
-    TimerState _stationConnectTimer;
-    TimerState _reconnectTimer;
+    Timer _stationConnectTimer;
+    Timer _reconnectTimer;
     uint32_t _reconnectAttempts;
     bool _eventRegistered;
     static WifiController *_instance;
@@ -44,23 +30,19 @@ private:
     bool _accessPointEnabled() const;
     bool _usingAccessPointFallback() const;
     void _stopStationTimers();
-    bool _applyConfiguration();
-    bool _applyMode(WifiMode mode);
     void _applyHostname();
     bool _applyIpConfig();
     bool _startStation();
     bool _startAccessPoint();
     void _stopStation();
     void _stopAccessPoint();
+    bool _applyMode(WifiMode mode);
+    bool _applyConfiguration();
     void _updateConnecting(uint32_t nowMs);
     void _updateReconnect(uint32_t nowMs);
 public:
     WifiController();
-    bool begin(
-        const WifiConfig &config,
-        const WifiCredentials &stationCredentials,
-        const WifiCredentials &accessPointCredentials
-    );
+    bool begin(const WifiConfig &cfg, const WifiCredentials &stationCredentials, const WifiCredentials &accessPointCredentials);
     void update(uint32_t nowMs);
     void disconnect();
     bool isConnected() const;

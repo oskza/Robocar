@@ -1,11 +1,12 @@
 #ifndef MOTION_CONTROLLER_H
 #define MOTION_CONTROLLER_H
 #include <Bmm150Compass.h>
+#include <Timer.h>
 #include "drive/DifferentialDrive.h"
 #include "odometry/Odometry.h"
-#include "MotionState.h"
 #include "MotionConfig.h"
 #include "MotionSnapshot.h"
+#include "MotionState.h"
 
 class MotionController {
 private:
@@ -15,14 +16,10 @@ private:
     MotionConfig _cfg;
     MotionState _state;
     struct TimedTarget {
+        Timer timer{};
         uint32_t durationMs = 0;
-        uint32_t endTimeMs = 0;
         int16_t velocity = 0;
         int16_t turn = 0;
-        bool started = false;
-        bool expired(uint32_t nowMs) const {
-            return started && (int32_t)(nowMs - endTimeMs) >= 0;
-        }
     } _timed;
     struct DistanceTarget {
         uint32_t startTicks = 0;
@@ -34,6 +31,7 @@ private:
         uint8_t speed = 0;
     } _rotation;
     void _clearTargets();
+    void _updateTimed(uint32_t nowMs);
     void _updateRotation();
 public:
     MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass);

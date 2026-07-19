@@ -1,17 +1,31 @@
 #include "MotionController.h"
 #include <AngleMath.h>
+#include <math.h>
 
 MotionController::MotionController(DifferentialDrive &differential, Odometry &odometry, Bmm150Compass &compass)
     : _differential(differential),
       _odometry(odometry),
       _compass(compass),
       _cfg{},
-      _state(MotionState::IDLE) {}
+      _state(MotionState::IDLE),
+      _timed{},
+      _distance{},
+      _rotation{} {}
 
 void MotionController::_clearTargets() {
     _timed = {};
     _distance = {};
     _rotation = {};
+}
+
+void MotionController::_updateTimed(uint32_t nowMs) {
+    if (!_timed.timer.isRunning()) {
+        _timed.timer.start(nowMs);
+        _differential.drive(_timed.velocity, _timed.turn);
+        return;
+    }
+    if (_timed.timer.hasElapsed(nowMs, _timed.durationMs))
+        brake();
 }
 
 void MotionController::_updateRotation() {
@@ -31,22 +45,9 @@ void MotionController::_updateRotation() {
 
 void MotionController::begin(const MotionConfig &cfg, uint32_t pwmFrequency, uint8_t encoderSlots) {
     _cfg = cfg;
-
-    _differential.begin(
-        _cfg.wheelAcceleration,
-        pwmFrequency,
-        _cfg.motorLeftMinPwm,
-        _cfg.motorRightMinPwm
-    );
-
-    _odometry.begin(
-        encoderSlots,
-        _cfg.wheelDiameterMeters,
-        _cfg.wheelCircumferenceFactor
-    );
-
+    _differential.begin(_cfg.wheelAcceleration, pwmFrequency, _cfg.motorLeftMinPwm, _cfg.motorRightMinPwm);
+    _odometry.begin(encoderSlots, _cfg.wheelDiameterMeters, _cfg.wheelCircumferenceFactor);
     _compass.begin();
-
     _clearTargets();
     _state = MotionState::IDLE;
 }
@@ -63,11 +64,10 @@ void MotionController::driveFor(int16_t velocity, int16_t turn, uint32_t duratio
         return;
     }
     _clearTargets();
-    _state = MotionState::TIMED;
+    _timed.durationMs = durationMs;
     _timed.velocity = velocity;
     _timed.turn = turn;
-    _timed.durationMs = durationMs;
-    _timed.started = false;
+    _state = MotionState::TIMED;
 }
 
 void MotionController::driveDistance(int16_t velocity, float meters) {
@@ -81,9 +81,9 @@ void MotionController::driveDistance(int16_t velocity, float meters) {
         return;
     }
     _clearTargets();
-    _state = MotionState::DISTANCE;
     _distance.startTicks = _odometry.getTicks();
     _distance.targetTicks = targetTicks;
+    _state = MotionState::DISTANCE;
     _differential.drive(velocity, 0);
 }
 
@@ -93,9 +93,9 @@ void MotionController::rotateTo(float headingDegrees, uint8_t speed) {
         return;
     }
     _clearTargets();
-    _state = MotionState::ROTATING;
     _rotation.headingDegrees = AngleMath::normalizeDegrees(headingDegrees);
     _rotation.speed = speed;
+    _state = MotionState::ROTATING;
 }
 
 void MotionController::rotateBy(float degrees, uint8_t speed) {
@@ -110,13 +110,7 @@ void MotionController::rotateBy(float degrees, uint8_t speed) {
 void MotionController::update(uint32_t nowMs) {
     switch (_state) {
         case MotionState::TIMED:
-            if (!_timed.started) {
-                _timed.started = true;
-                _timed.endTimeMs = nowMs + _timed.durationMs;
-                _differential.drive(_timed.velocity, _timed.turn);
-            } else if (_timed.expired(nowMs)) {
-                brake();
-            }
+            _updateTimed(nowMs);
             break;
         case MotionState::DISTANCE:
             if (_distance.reached(_odometry.getTicks()))

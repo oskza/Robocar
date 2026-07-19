@@ -1,6 +1,7 @@
 #ifndef TELEMETRY_SERVICE_H
 #define TELEMETRY_SERVICE_H
 #include <stddef.h>
+#include <Timer.h>
 #include <WebSocketServer.h>
 #include "robot/Robot.h"
 
@@ -10,7 +11,7 @@ private:
     Robot &_robot;
     WebSocketServer &_server;
     uint32_t _intervalMs;
-    uint32_t _lastBroadcastMs;
+    Timer _broadcastTimer;
     char _buffer[BUFFER_SIZE];
 public:
     TelemetryService(Robot &robot, WebSocketServer &server, uint32_t intervalMs);
