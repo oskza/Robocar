@@ -30,6 +30,7 @@ public:
     RobotSnapshot getSnapshot();
     void getConfig(RobotConfig &config) const;
     void setConfig(const RobotConfig &config);
+    const char *getHostname() const;
     bool isTelemetryEnabled() const;
 };
 #endif

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WebSocketServer.h>
+#include "RobocarApp.h"
 #include "command/CommandDispatcher.h"
 #include "command/CommandProcessor.h"
 #include "hardware/RobotHardwareConfig.h"
@@ -57,10 +58,9 @@ namespace {
     MotionController motionController(differentialDrive, odometry, compass);
 
     MotionStorage motionStorage;
+    RobotStorage robotStorage;
 
     Robot robot(powerService, wifiController, motionController);
-
-    RobotStorage robotStorage;
 
     CommandDispatcher commandDispatcher(
         robot,
@@ -81,63 +81,27 @@ namespace {
 
     OtaService otaService;
 
+    RobocarApp app(
+        robot,
+        robotStorage,
+        motionStorage,
+        wifiStorage,
+        otaService,
+        webSocketService,
+        telemetryService
+    );
+
     void IRAM_ATTR onLeftEncoder() { leftEncoder.tick(); }
 
     void IRAM_ATTR onRightEncoder() { rightEncoder.tick(); }
-
-    bool loadConfiguration(
-        RobotConfig &robotConfig,
-        MotionConfig &motionConfig,
-        WifiConfig &wifiConfig,
-        WifiCredentials &stationCredentials,
-        WifiCredentials &accessPointCredentials
-    ) {
-        bool ok = true;
-        ok &= robotStorage.loadConfig(robotConfig);
-        ok &= motionStorage.loadConfig(motionConfig);
-        ok &= wifiStorage.loadConfig(wifiConfig);
-        ok &= wifiStorage.loadStationCredentials(stationCredentials);
-        ok &= wifiStorage.loadAccessPointCredentials(accessPointCredentials);
-        return ok;
-    }
 }
 
 void setup() {
     Serial.begin(MONITOR_SPEED);
     leftEncoder.begin(onLeftEncoder);
     rightEncoder.begin(onRightEncoder);
-    RobotConfig robotConfig{};
-    MotionConfig motionConfig{};
-    WifiConfig wifiConfig{};
-    WifiCredentials stationCredentials{};
-    WifiCredentials accessPointCredentials{};
-    const bool configurationLoaded = loadConfiguration(
-        robotConfig,
-        motionConfig,
-        wifiConfig,
-        stationCredentials,
-        accessPointCredentials
-    );
-    const bool robotStarted = robot.begin(
-        robotConfig,
-        motionConfig,
-        wifiConfig,
-        stationCredentials,
-        accessPointCredentials
-    );
-    if (!configurationLoaded)
-        Serial.println("Failed to load one or more configurations");
-    if (!robotStarted)
-        Serial.println("Failed to initialize one or more robot components");
-    otaService.begin(wifiController.getHostname());
-    webSocketService.begin();
+    if (!app.begin())
+        Serial.println("Application started with errors");
 }
 
-void loop() {
-    const uint32_t nowMs = millis();
-    robot.update(nowMs);
-    otaService.update();
-    webSocketService.update();
-    if (robot.isTelemetryEnabled())
-        telemetryService.update(nowMs);
-}
+void loop() { app.update(millis()); }

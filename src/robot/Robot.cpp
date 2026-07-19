@@ -51,4 +51,6 @@ void Robot::getConfig(RobotConfig &config) const { config = _config; }
 
 void Robot::setConfig(const RobotConfig &config) { _config = config; }
 
+const char *Robot::getHostname() const { return _wifi.getHostname(); }
+
 bool Robot::isTelemetryEnabled() const { return _config.telemetryEnabled; }
