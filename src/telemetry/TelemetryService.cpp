@@ -1,37 +1,33 @@
 #include "TelemetryService.h"
 #include <ArduinoJson.h>
-
-static constexpr size_t TELEMETRY_BUFFER_SIZE = 2048;
+#include "robot/json/writer/RobotSnapshotJsonWriter.h"
 
 TelemetryService::TelemetryService(Robot &robot, WebSocketServer &server, uint32_t intervalMs)
-    : _robot(robot), _server(server), _intervalMs(intervalMs), _lastBroadcastMs(0) {}
+    : _robot(robot),
+      _server(server),
+      _intervalMs(intervalMs),
+      _lastBroadcastMs(0),
+      _buffer{} {}
 
 void TelemetryService::update(uint32_t nowMs) {
-    if (_intervalMs == 0 || nowMs - _lastBroadcastMs < _intervalMs)
+    if (_intervalMs == 0
+            || !_server.hasClients()
+            || nowMs - _lastBroadcastMs < _intervalMs)
         return;
-
     _lastBroadcastMs = nowMs;
-
-    RobotSnapshot snapshot = _robot.getSnapshot();
-
-    JsonDocument doc;
-    doc["type"] = "telemetry";
-
-    RobotSnapshotJsonWriter::write(doc["payload"].to<JsonObject>(), snapshot);
-
-    char buffer[TELEMETRY_BUFFER_SIZE + 1];
-
-    size_t required = measureJson(doc);
-
-    if (required == 0 || required > TELEMETRY_BUFFER_SIZE)
+    const RobotSnapshot snapshot = _robot.getSnapshot();
+    JsonDocument document;
+    document["type"] = "telemetry";
+    RobotSnapshotJsonWriter::write(document["payload"].to<JsonObject>(), snapshot);
+    const size_t requiredCapacity = measureJson(document) + 1;
+    if (requiredCapacity > sizeof(_buffer))
         return;
-
-    size_t written = serializeJson(doc, buffer, TELEMETRY_BUFFER_SIZE);
-
-    if (written != required)
+    const size_t written = serializeJson(document, _buffer, sizeof(_buffer));
+    if (written == 0)
         return;
-
-    buffer[written] = '\0';
-
-    _server.broadcast(buffer);
+    _server.broadcast(_buffer, written);
 }
+
+uint32_t TelemetryService::getIntervalMs() const { return _intervalMs; }
+
+void TelemetryService::setIntervalMs(uint32_t intervalMs) { _intervalMs = intervalMs; }

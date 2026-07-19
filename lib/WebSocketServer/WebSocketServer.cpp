@@ -1,79 +1,117 @@
 #include "WebSocketServer.h"
+#include <string.h>
 
 WebSocketServer::WebSocketServer(uint16_t port, const char *path, uint8_t maxClients)
     : _server(port),
-      _ws(path),
+      _webSocket(path),
       _maxClients(maxClients),
-      _messageHandler(nullptr) {}
+      _messageHandler(nullptr),
+      _started(false) {}
 
-void WebSocketServer::_handleEvent(AsyncWebSocketClient *client, AwsEventType type,
-                                    void *arg, uint8_t *data, size_t len) {
+void WebSocketServer::_handleEvent(AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t length) {
     switch (type) {
         case WS_EVT_CONNECT:
             _handleConnect(client);
             break;
         case WS_EVT_DATA:
-            _handleData(arg, data, len);
+            _handleData(client, arg, data, length);
             break;
-        default:
+        case WS_EVT_DISCONNECT:
+        case WS_EVT_PONG:
+        case WS_EVT_ERROR:
             break;
     }
 }
 
 void WebSocketServer::_handleConnect(AsyncWebSocketClient *client) {
-    if (!client)
+    if (client == nullptr)
         return;
+    if (getClientCount() > _maxClients) {
+        client->close();
+        return;
+    }
     client->setCloseClientOnQueueFull(false);
     client->ping();
 }
 
-void WebSocketServer::_handleData(void *arg, uint8_t *data, size_t len) {
-    if (!_messageHandler)
+void WebSocketServer::_handleData(AsyncWebSocketClient *client, void *arg, uint8_t *data, size_t length) {
+    if (client == nullptr
+            || _messageHandler == nullptr
+            || data == nullptr
+            || length == 0)
         return;
-    AwsFrameInfo *info = (AwsFrameInfo *)arg;
-    if (!info || !info->final
+    const AwsFrameInfo *info = static_cast<AwsFrameInfo*>(arg);
+    if (info == nullptr
+            || !info->final
             || info->index != 0
-            || info->len != len
+            || info->len != length
             || info->opcode != WS_TEXT)
         return;
-    _messageHandler((const char*)data, len);
+    _messageHandler(client, data, length);
 }
 
-void WebSocketServer::begin(MessageHandler messageHandler) {
-    onMessage(messageHandler);
-    _ws.onEvent([this](
-            AsyncWebSocket*, AsyncWebSocketClient *client,
-            AwsEventType type, void *arg, uint8_t *data, size_t len) {
-        _handleEvent(client, type, arg, data, len);
-    });
-    _server.addHandler(&_ws);
+bool WebSocketServer::begin(MessageHandler messageHandler) {
+    if (_started) {
+        if (messageHandler != nullptr)
+            _messageHandler = messageHandler;
+        return true;
+    }
+    _messageHandler = messageHandler;
+    _webSocket.onEvent(
+        [this](
+            AsyncWebSocket *,
+            AsyncWebSocketClient *client,
+            AwsEventType type,
+            void *arg,
+            uint8_t *data,
+            size_t length
+        ) { _handleEvent(client, type, arg, data, length); }
+    );
+    _server.addHandler(&_webSocket);
     _server.begin();
+    _started = true;
+    return true;
 }
 
 void WebSocketServer::onMessage(MessageHandler handler) { _messageHandler = handler; }
 
-void WebSocketServer::update() { _ws.cleanupClients(_maxClients); }
+void WebSocketServer::update() {
+    if (!_started)
+        return;
+    _webSocket.cleanupClients(_maxClients);
+}
+
+bool WebSocketServer::isStarted() const { return _started; }
 
 bool WebSocketServer::hasClients() const { return getClientCount() > 0; }
 
-uint8_t WebSocketServer::getClientCount() const { return (uint8_t)_ws.count(); }
+uint8_t WebSocketServer::getClientCount() const { return (uint8_t)_webSocket.count(); }
 
 bool WebSocketServer::send(AsyncWebSocketClient *client, const char *message, size_t length) {
-    if (!client || !message || length == 0)
+    if (!_started
+            || client == nullptr
+            || message == nullptr
+            || length == 0
+            || client->status() != WS_CONNECTED)
         return false;
     client->text(message, length);
     return true;
 }
 
-bool WebSocketServer::broadcast(const char *message) {
-    if (!message)
-        return false;
-    return broadcast(message, strlen(message));
+bool WebSocketServer::send(AsyncWebSocketClient *client, const char *message) {
+    return (message != nullptr) ? send(client, message, strlen(message)) : false;
 }
 
 bool WebSocketServer::broadcast(const char *message, size_t length) {
-    if (!message || length == 0 || !hasClients())
+    if (!_started
+            || message == nullptr
+            || length == 0
+            || !hasClients())
         return false;
-    _ws.textAll(message, length);
+    _webSocket.textAll(message, length);
     return true;
+}
+
+bool WebSocketServer::broadcast(const char *message) {
+    return (message != nullptr) ? broadcast(message, strlen(message)) : false;
 }

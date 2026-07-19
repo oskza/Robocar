@@ -6,7 +6,7 @@
 CommandProcessor::CommandProcessor(CommandDispatcher &dispatcher) : _dispatcher(dispatcher) {}
 
 bool CommandProcessor::handle(
-    const char *request,
+    const uint8_t *request,
     size_t requestLength,
     char *responseBuffer,
     size_t responseCapacity

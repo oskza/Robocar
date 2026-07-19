@@ -9,7 +9,7 @@ private:
 public:
     explicit CommandProcessor(CommandDispatcher &dispatcher);
     bool handle(
-        const char *request,
+        const uint8_t *request,
         size_t requestLength,
         char *responseBuffer,
         size_t responseCapacity

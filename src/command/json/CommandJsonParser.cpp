@@ -70,7 +70,7 @@ namespace {
 }
 
 namespace CommandJsonParser {
-    CommandError parse(const char *data, size_t length, CommandEnvelope &command) {
+    CommandError parse(const uint8_t *data, size_t length, CommandEnvelope &command) {
         if (data == nullptr || length == 0)
             return CommandError::INVALID_JSON;
         JsonDocument document;
