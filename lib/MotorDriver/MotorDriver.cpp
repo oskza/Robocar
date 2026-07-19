@@ -79,3 +79,12 @@ void MotorDriver::setOutput(int16_t output) {
         _applyReverse();
     ledcWrite(_pwmChannel, hwPwm);
 }
+
+void MotorDriver::setMinEffectivePwm(uint8_t minEffectivePwm) {
+    minEffectivePwm = constrain(minEffectivePwm, 0, MAX_OUTPUT);
+    if (_minEffectivePwm == minEffectivePwm)
+        return;
+    _minEffectivePwm = minEffectivePwm;
+    if (_output != 0)
+        ledcWrite(_pwmChannel, _scalePwm((uint8_t)abs(_output)));
+}

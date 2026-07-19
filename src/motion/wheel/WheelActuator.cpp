@@ -53,3 +53,5 @@ uint8_t WheelActuator::getAcceleration() const { return _acceleration; }
 void WheelActuator::setAcceleration(uint8_t acceleration) {
     _acceleration = min(acceleration, MotorDriver::MAX_OUTPUT);
 }
+
+void WheelActuator::setMinEffectivePwm(uint8_t minEffectivePwm) { _motor.setMinEffectivePwm(minEffectivePwm); }

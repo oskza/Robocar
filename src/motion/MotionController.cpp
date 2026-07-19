@@ -173,4 +173,10 @@ MotionSnapshot MotionController::getSnapshot() const {
 
 void MotionController::getConfig(MotionConfig &cfg) const { cfg = _cfg; }
 
-void MotionController::setConfig(const MotionConfig &cfg) { _cfg = cfg; }
+void MotionController::setConfig(const MotionConfig &cfg) {
+    if (!isStopped())
+        brake();
+    _cfg = cfg;
+    _differential.setConfig(_cfg.wheelAcceleration, _cfg.motorLeftMinPwm, _cfg.motorRightMinPwm);
+    _odometry.setWheelGeometry(_cfg.wheelDiameterMeters, _cfg.wheelCircumferenceFactor);
+}

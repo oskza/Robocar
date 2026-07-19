@@ -6,12 +6,8 @@ Odometry::Odometry(Encoder &leftEncoder, Encoder &rightEncoder)
       _wheelCircumference(0.0f),
       _encoderSlots(1) {}
 
-void Odometry::begin(
-    uint8_t encoderSlots,
-    float wheelDiameterMeters,
-    float wheelCircumferenceFactor
-) {
-    _wheelCircumference = wheelDiameterMeters * PI * wheelCircumferenceFactor;
+void Odometry::begin(uint8_t encoderSlots, float wheelDiameterMeters, float wheelCircumferenceFactor) {
+    setWheelGeometry(wheelDiameterMeters, wheelCircumferenceFactor);
     _encoderSlots = max<uint8_t>(encoderSlots, 1);
     reset();
 }
@@ -19,6 +15,10 @@ void Odometry::begin(
 void Odometry::reset() {
     _leftEncoder.reset();
     _rightEncoder.reset();
+}
+
+void Odometry::setWheelGeometry(float wheelDiameterMeters, float wheelCircumferenceFactor) {
+    _wheelCircumference = wheelDiameterMeters * PI * wheelCircumferenceFactor;
 }
 
 uint32_t Odometry::getTicks() const {

@@ -16,6 +16,7 @@ public:
         float wheelCircumferenceFactor = 1.0f
     );
     void reset();
+    void setWheelGeometry(float wheelDiameterMeters, float wheelCircumferenceFactor = 1.0f);
     uint32_t getTicks() const;
     float getMeters() const;
     uint32_t metersToTicks(float meters) const;

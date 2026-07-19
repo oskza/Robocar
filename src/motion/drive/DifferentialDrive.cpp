@@ -48,6 +48,13 @@ void DifferentialDrive::brake() {
 
 bool DifferentialDrive::isStopped() const { return _leftWheel.isStopped() && _rightWheel.isStopped(); }
 
+void DifferentialDrive::setConfig(uint8_t acceleration, uint8_t leftMinEffectivePwm, uint8_t rightMinEffectivePwm) {
+    _leftWheel.setAcceleration(acceleration);
+    _rightWheel.setAcceleration(acceleration);
+    _leftWheel.setMinEffectivePwm(leftMinEffectivePwm);
+    _rightWheel.setMinEffectivePwm(rightMinEffectivePwm);
+}
+
 int16_t DifferentialDrive::getLeftOutput() const { return _leftWheel.getCurrentOutput(); }
 
 int16_t DifferentialDrive::getRightOutput() const { return _rightWheel.getCurrentOutput(); }

@@ -21,6 +21,7 @@ public:
     void stop();
     void brake();
     bool isStopped() const;
+    void setConfig(uint8_t acceleration, uint8_t leftMinEffectivePwm, uint8_t rightMinEffectivePwm);
     int16_t getLeftOutput() const;
     int16_t getRightOutput() const;
 };

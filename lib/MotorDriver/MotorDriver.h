@@ -25,5 +25,6 @@ public:
     bool isStopped() const;
     int16_t getOutput() const;
     void setOutput(int16_t output);
+    void setMinEffectivePwm(uint8_t minEffectivePwm);
 };
 #endif

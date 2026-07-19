@@ -25,5 +25,6 @@ public:
     void setTargetOutput(int16_t output);
     uint8_t getAcceleration() const;
     void setAcceleration(uint8_t acceleration);
+    void setMinEffectivePwm(uint8_t minEffectivePwm);
 };
 #endif
