@@ -48,27 +48,28 @@ bool RobocarApp::begin() {
     WifiConfig wifiConfig{};
     WifiCredentials stationCredentials{};
     WifiCredentials accessPointCredentials{};
-    bool ok = true;
-    ok &= _loadConfiguration(
-        robotConfig,
-        motionConfig,
-        wifiConfig,
-        stationCredentials,
-        accessPointCredentials
-    );
-    ok &= _robot.begin(
-        robotConfig,
-        motionConfig,
-        wifiConfig,
-        stationCredentials,
-        accessPointCredentials
-    );
-    ok &= _ota.begin(_robot.getHostname());
-    ok &= _webSocket.begin();
+    if (!_loadConfiguration(
+            robotConfig,
+            motionConfig,
+            wifiConfig,
+            stationCredentials,
+            accessPointCredentials))
+        return false;
+    if (!_robot.begin(
+            robotConfig,
+            motionConfig,
+            wifiConfig,
+            stationCredentials,
+            accessPointCredentials))
+        return false;
+    if (!_ota.begin(_robot.getHostname()))
+        return false;
+    if (!_webSocket.begin())
+        return false;
     _motionTimer.stop();
     _wifiTimer.stop();
     _started = true;
-    return ok;
+    return true;
 }
 
 void RobocarApp::update(uint32_t nowMs) {
