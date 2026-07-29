@@ -47,7 +47,7 @@ public:
     void resetOdometry();
     bool isStopped() const;
     MotionState getState() const;
-    MotionSnapshot getSnapshot() const;
+    MotionSnapshot getSnapshot();
     void getConfig(MotionConfig &cfg) const;
     void setConfig(const MotionConfig &cfg);
 };

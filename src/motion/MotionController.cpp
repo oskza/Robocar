@@ -144,7 +144,7 @@ bool MotionController::isStopped() const { return _state == MotionState::IDLE &&
 
 MotionState MotionController::getState() const { return _state; }
 
-MotionSnapshot MotionController::getSnapshot() const {
+MotionSnapshot MotionController::getSnapshot() {
     MotionSnapshot snapshot{};
     snapshot.state = _state;
     snapshot.stopped = isStopped();
