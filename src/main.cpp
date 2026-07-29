@@ -3,12 +3,12 @@
 #include "RobocarApp.h"
 #include "command/CommandDispatcher.h"
 #include "command/CommandProcessor.h"
+#include "robot/RobotCommandHandler.h"
+#include "system/SystemCommandHandler.h"
+#include "network/WifiCommandHandler.h"
+#include "motion/MotionCommandHandler.h"
 #include "hardware/RobotHardwareConfig.h"
-#include "motion/MotionStorage.h"
-#include "network/WifiStorage.h"
 #include "ota/OtaService.h"
-#include "robot/Robot.h"
-#include "robot/RobotStorage.h"
 #include "telemetry/TelemetryService.h"
 #include "websocket/WebSocketService.h"
 
@@ -62,14 +62,15 @@ namespace {
 
     Robot robot(powerService, wifiController, motionController);
 
-    CommandDispatcher commandDispatcher(
-        robot,
-        robotStorage,
-        motionController,
-        motionStorage,
-        wifiController,
-        wifiStorage
-    );
+    RobotCommandHandler robotCommandHandler(robot, robotStorage);
+
+    SystemCommandHandler systemCommandHandler;
+
+    WifiCommandHandler wifiCommandHandler(wifiController, wifiStorage);
+
+    MotionCommandHandler motionCommandHandler(motionController, motionStorage);
+
+    CommandDispatcher commandDispatcher(robotCommandHandler, motionCommandHandler, wifiCommandHandler, systemCommandHandler);
 
     CommandProcessor commandProcessor(commandDispatcher);
 
@@ -83,6 +84,8 @@ namespace {
 
     RobocarApp app(
         robot,
+        motionController,
+        wifiController,
         robotStorage,
         motionStorage,
         wifiStorage,

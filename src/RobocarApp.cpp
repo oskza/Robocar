@@ -2,6 +2,8 @@
 
 RobocarApp::RobocarApp(
     Robot &robot,
+    MotionController &motion,
+    WifiController &wifi,
     RobotStorage &robotStorage,
     MotionStorage &motionStorage,
     WifiStorage &wifiStorage,
@@ -10,12 +12,16 @@ RobocarApp::RobocarApp(
     TelemetryService &telemetry
 )
     : _robot(robot),
+      _motion(motion),
+      _wifi(wifi),
       _robotStorage(robotStorage),
       _motionStorage(motionStorage),
       _wifiStorage(wifiStorage),
       _ota(ota),
       _webSocket(webSocket),
       _telemetry(telemetry),
+      _motionTimer{},
+      _wifiTimer{},
       _started(false) {}
 
 bool RobocarApp::_loadConfiguration(
@@ -59,6 +65,8 @@ bool RobocarApp::begin() {
     );
     ok &= _ota.begin(_robot.getHostname());
     ok &= _webSocket.begin();
+    _motionTimer.stop();
+    _wifiTimer.stop();
     _started = true;
     return ok;
 }
@@ -66,10 +74,15 @@ bool RobocarApp::begin() {
 void RobocarApp::update(uint32_t nowMs) {
     if (!_started)
         return;
-    _robot.update(nowMs);
+    RobotConfig cfg{};
+    _robot.getConfig(cfg);
+    if (_motionTimer.poll(nowMs, cfg.motionUpdateIntervalMs))
+        _motion.update(nowMs);
+    if (_wifiTimer.poll(nowMs, cfg.wifiUpdateIntervalMs))
+        _wifi.update(nowMs);
     _ota.update();
     _webSocket.update();
-    if (_robot.isTelemetryEnabled())
+    if (cfg.telemetryEnabled)
         _telemetry.update(nowMs);
 }
 
