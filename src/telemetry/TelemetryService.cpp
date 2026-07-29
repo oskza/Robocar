@@ -10,18 +10,20 @@ TelemetryService::TelemetryService(Robot &robot, WebSocketServer &server, uint32
       _buffer{} {}
 
 void TelemetryService::update(uint32_t nowMs) {
-    if (_intervalMs == 0
-            || !_server.hasClients()
-            || !_broadcastTimer.poll(nowMs, _intervalMs))
+    if (_intervalMs == 0 || !_server.hasClients()) {
+        _broadcastTimer.stop();
+        return;
+    }
+    if (!_broadcastTimer.poll(nowMs, _intervalMs))
         return;
     const RobotSnapshot snapshot = _robot.getSnapshot();
-    JsonDocument document;
-    document["type"] = "telemetry";
-    RobotSnapshotJsonWriter::write(document["payload"].to<JsonObject>(), snapshot);
-    const size_t requiredCapacity = measureJson(document) + 1;
+    JsonDocument doc;
+    doc["type"] = "telemetry";
+    RobotSnapshotJsonWriter::write(doc["payload"].to<JsonObject>(), snapshot);
+    const size_t requiredCapacity = measureJson(doc) + 1;
     if (requiredCapacity > sizeof(_buffer))
         return;
-    const size_t written = serializeJson(document, _buffer, sizeof(_buffer));
+    const size_t written = serializeJson(doc, _buffer, sizeof(_buffer));
     if (written == 0)
         return;
     _server.broadcast(_buffer, written);
@@ -29,4 +31,9 @@ void TelemetryService::update(uint32_t nowMs) {
 
 uint32_t TelemetryService::getIntervalMs() const { return _intervalMs; }
 
-void TelemetryService::setIntervalMs(uint32_t intervalMs) { _intervalMs = intervalMs; }
+void TelemetryService::setIntervalMs(uint32_t intervalMs) {
+    if (_intervalMs == intervalMs)
+        return;
+    _intervalMs = intervalMs;
+    _broadcastTimer.stop();
+}
