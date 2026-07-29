@@ -3,7 +3,8 @@
 #include "SystemCommand.h"
 #include "command/CommandResponse.h"
 
-namespace SystemCommandHandler {
-    bool execute(SystemCommand command, CommandResponse &response);
-}
+class SystemCommandHandler {
+public:
+    bool execute(const SystemCommand &command, CommandResponse &response);
+};
 #endif

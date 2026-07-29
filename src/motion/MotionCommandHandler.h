@@ -5,12 +5,12 @@
 #include "MotionStorage.h"
 #include "command/CommandResponse.h"
 
-namespace MotionCommandHandler {
-    bool execute(
-        MotionController &motion,
-        MotionStorage &storage,
-        const MotionCommand &command,
-        CommandResponse &response
-    );
-}
+class MotionCommandHandler {
+private:
+    MotionController &_motion;
+    MotionStorage &_storage;
+public:
+    MotionCommandHandler(MotionController &motion, MotionStorage &storage);
+    bool execute(const MotionCommand &command, CommandResponse &response);
+};
 #endif

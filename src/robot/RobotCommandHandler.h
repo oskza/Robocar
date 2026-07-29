@@ -5,7 +5,12 @@
 #include "RobotStorage.h"
 #include "command/CommandResponse.h"
 
-namespace RobotCommandHandler {
-    bool execute(Robot &robot, RobotStorage &storage, const RobotCommand &command, CommandResponse &response);
-}
+class RobotCommandHandler {
+private:
+    Robot &_robot;
+    RobotStorage &_storage;
+public:
+    RobotCommandHandler(Robot &robot, RobotStorage &storage);
+    bool execute(const RobotCommand &command, CommandResponse &response);
+};
 #endif

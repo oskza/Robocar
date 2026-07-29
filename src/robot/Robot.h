@@ -1,6 +1,5 @@
 #ifndef ROBOT_H
 #define ROBOT_H
-#include <Timer.h>
 #include "RobotConfig.h"
 #include "RobotSnapshot.h"
 #include "motion/MotionController.h"
@@ -16,8 +15,6 @@ private:
     WifiController &_wifi;
     MotionController &_motion;
     RobotConfig _cfg;
-    Timer _motionTimer;
-    Timer _wifiTimer;
 public:
     Robot(PowerService &power, WifiController &wifi, MotionController &motion);
     bool begin(
@@ -27,10 +24,9 @@ public:
         const WifiCredentials &stationCredentials,
         const WifiCredentials &accessPointCredentials
     );
-    void update(uint32_t nowMs);
-    RobotSnapshot getSnapshot();
-    void getConfig(RobotConfig &config) const;
-    void setConfig(const RobotConfig &config);
+    RobotSnapshot getSnapshot() const;
+    void getConfig(RobotConfig &cfg) const;
+    void setConfig(const RobotConfig &cfg);
     const char *getHostname() const;
     bool isTelemetryEnabled() const;
 };

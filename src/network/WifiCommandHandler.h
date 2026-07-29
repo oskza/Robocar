@@ -5,12 +5,12 @@
 #include "WifiStorage.h"
 #include "command/CommandResponse.h"
 
-namespace WifiCommandHandler {
-    bool execute(
-        WifiController &wifi,
-        WifiStorage &storage,
-        const WifiCommand &command,
-        CommandResponse &response
-    );
-}
+class WifiCommandHandler {
+private:
+    WifiController &_wifi;
+    WifiStorage &_storage;
+public:
+    WifiCommandHandler(WifiController &wifi, WifiStorage &storage);
+    bool execute(const WifiCommand &command, CommandResponse &response);
+};
 #endif

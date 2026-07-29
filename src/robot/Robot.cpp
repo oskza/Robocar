@@ -6,9 +6,7 @@ Robot::Robot(PowerService &power, WifiController &wifi, MotionController &motion
     : _power(power),
       _wifi(wifi),
       _motion(motion),
-      _cfg{},
-      _motionTimer{},
-      _wifiTimer{} {}
+      _cfg{} {}
 
 bool Robot::begin(
     const RobotConfig &robotConfig,
@@ -18,8 +16,6 @@ bool Robot::begin(
     const WifiCredentials &accessPointCredentials
 ) {
     _cfg = robotConfig;
-    _motionTimer.stop();
-    _wifiTimer.stop();
     bool ok = true;
     ok &= _wifi.begin(wifiConfig, stationCredentials, accessPointCredentials);
     _motion.begin(motionConfig, RobotHardwareConfig::MOTOR_PWM_FREQ, RobotHardwareConfig::ENCODER_SLOTS);
@@ -27,14 +23,7 @@ bool Robot::begin(
     return ok;
 }
 
-void Robot::update(uint32_t nowMs) {
-    if (_motionTimer.poll(nowMs, _cfg.motionUpdateIntervalMs))
-        _motion.update(nowMs);
-    if (_wifiTimer.poll(nowMs, _cfg.wifiUpdateIntervalMs))
-        _wifi.update(nowMs);
-}
-
-RobotSnapshot Robot::getSnapshot() {
+RobotSnapshot Robot::getSnapshot() const {
     RobotSnapshot snapshot{};
     snapshot.system = Platform::System::getSnapshot();
     snapshot.power = _power.getSnapshot();
@@ -43,9 +32,9 @@ RobotSnapshot Robot::getSnapshot() {
     return snapshot;
 }
 
-void Robot::getConfig(RobotConfig &config) const { config = _cfg; }
+void Robot::getConfig(RobotConfig &cfg) const { cfg = _cfg; }
 
-void Robot::setConfig(const RobotConfig &config) { _cfg = config; }
+void Robot::setConfig(const RobotConfig &cfg) { _cfg = cfg; }
 
 const char *Robot::getHostname() const { return _wifi.getHostname(); }
 
