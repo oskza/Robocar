@@ -23,7 +23,7 @@ bool Robot::begin(
     return ok;
 }
 
-RobotSnapshot Robot::getSnapshot() const {
+RobotSnapshot Robot::getSnapshot() {
     RobotSnapshot snapshot{};
     snapshot.system = Platform::System::getSnapshot();
     snapshot.power = _power.getSnapshot();

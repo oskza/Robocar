@@ -24,7 +24,7 @@ public:
         const WifiCredentials &stationCredentials,
         const WifiCredentials &accessPointCredentials
     );
-    RobotSnapshot getSnapshot() const;
+    RobotSnapshot getSnapshot();
     void getConfig(RobotConfig &cfg) const;
     void setConfig(const RobotConfig &cfg);
     const char *getHostname() const;
